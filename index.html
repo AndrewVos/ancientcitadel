@@ -107,6 +107,10 @@
         $(".pin img").on("error", function() {
           $(this).parent().remove();
         });
+
+        $(".pin").click(function() {
+          swapImgSrc($(this).find("img"));
+        });
         $(".pin").hover(function() {
           swapImgSrc($(this).find("img"));
         }, function() {
