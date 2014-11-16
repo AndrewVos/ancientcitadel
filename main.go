@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"text/template"
 )
 
@@ -88,9 +89,18 @@ func redditPage(subReddit string, after string) (Page, error) {
 	page.SubReddit = subReddit
 	page.After = redditResponse.Data.After
 	for _, child := range redditResponse.Data.Children {
+		url := child.Data.URL
+		if strings.Contains(url, "imgur.com") && !strings.HasSuffix(url, ".gif") {
+			url = url + ".gif"
+		}
+		if strings.Contains(url, "gfycat.com") && !strings.HasSuffix(url, ".gif") {
+			url = strings.Replace(url, "http://gfycat", "http://giant.gfycat", -1)
+			url += ".gif"
+		}
+
 		page.URLS = append(page.URLS, URL{
 			Title: child.Data.Title,
-			URL:   child.Data.URL,
+			URL:   url,
 		})
 	}
 	return page, nil
