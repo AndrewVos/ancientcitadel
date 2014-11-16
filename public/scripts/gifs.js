@@ -2,12 +2,13 @@ $(function() {
   loadPage();
 });
 
-function setAllToFirstFrameBut(img) {
-  $(".item img").each(function() {
-    $(this).attr("src", $(this).data("first-frame"));
-  });
-  if (img != null) {
-    img.attr("src", img.data("original"));
+function togglePlaying(img) {
+  var original = img.data("original");
+  var firstFrame = img.data("first-frame");
+  if (img.attr("src") == original) {
+    img.attr("src", firstFrame);
+  } else {
+    img.attr("src", original);
   }
 }
 
@@ -17,11 +18,6 @@ function loadPage() {
   });
 
   $(".item").click(function() {
-    setAllToFirstFrameBut($(this).find("img"));
-  });
-  $(".item").hover(function() {
-    setAllToFirstFrameBut($(this).find("img"));
-  }, function() {
-    setAllToFirstFrameBut();
+    togglePlaying($(this).find("img"));
   });
 }
