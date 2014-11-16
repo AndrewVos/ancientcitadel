@@ -34,8 +34,9 @@ type RedditResponseChildData struct {
 }
 
 type Page struct {
-	After string
-	URLS  []URL
+	SubReddit string
+	After     string
+	URLS      []URL
 }
 
 type URL struct {
@@ -63,8 +64,7 @@ func getImage(ctx groupcache.Context, key string, dest groupcache.Sink) error {
 	return nil
 }
 
-func redditPage(after string) (Page, error) {
-	subReddit := "gifs"
+func redditPage(subReddit string, after string) (Page, error) {
 	url := fmt.Sprintf("https://api.reddit.com/r/%v/hot.json", subReddit)
 	if after != "" {
 		url += "?after=" + after
@@ -85,6 +85,7 @@ func redditPage(after string) (Page, error) {
 	}
 
 	page := Page{}
+	page.SubReddit = subReddit
 	page.After = redditResponse.Data.After
 	for _, child := range redditResponse.Data.Children {
 		page.URLS = append(page.URLS, URL{
@@ -95,34 +96,35 @@ func redditPage(after string) (Page, error) {
 	return page, nil
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
+func root(w http.ResponseWriter, r *http.Request) {
 	template, err := template.ParseFiles("index.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Print(err)
 		return
 	}
-	err = template.Execute(w, nil)
+	err = template.Execute(w, SubReddits())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Print(err)
+		return
 	}
 }
 
-func page(w http.ResponseWriter, r *http.Request) {
+func handler(w http.ResponseWriter, r *http.Request) {
 	template, err := template.ParseFiles("page.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Print(err)
 		return
 	}
-	urls, err := redditPage(mux.Vars(r)["after"])
+	page, err := redditPage(mux.Vars(r)["subreddit"], mux.Vars(r)["after"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Print(err)
 		return
 	}
-	err = template.Execute(w, urls)
+	err = template.Execute(w, page)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Print(err)
@@ -150,9 +152,9 @@ func main() {
 
 	cacher = groupcache.NewGroup("gifs", 128<<20, groupcache.GetterFunc(getImage))
 	r := mux.NewRouter()
-	r.HandleFunc("/", handler)
-	r.HandleFunc("/page", page)
-	r.HandleFunc("/page/{after}", page)
+	r.HandleFunc("/", root)
+	r.HandleFunc("/r/{subreddit}", handler)
+	r.HandleFunc("/r/{subreddit}/{after}", handler)
 	r.HandleFunc("/gif", gifFrame)
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./public/")))
 	http.Handle("/", r)
