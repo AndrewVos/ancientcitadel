@@ -8,7 +8,7 @@ import (
 	"github.com/golang/groupcache"
 	"github.com/gorilla/mux"
 	"image/gif"
-	"image/jpeg"
+	"image/png"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -57,7 +57,7 @@ func getImage(ctx groupcache.Context, key string, dest groupcache.Sink) error {
 	}
 
 	buffer := &bytes.Buffer{}
-	err = jpeg.Encode(buffer, image, &jpeg.Options{jpeg.DefaultQuality})
+	err = png.Encode(buffer, image)
 	if err != nil {
 		return err
 	}
