@@ -1,22 +1,16 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <link rel="stylesheet" type="text/css" href="/styles/pins.css">
+    <title>gifflet</title>
   </head>
   <body>
     <h1>gifflet</h1>
     <div class="content">
-      <div id="wrapper">
-        <div id="columns">
-          {{range .}}
-            <div class="pin">
-              <p>
-                <a href="/r/{{.}}">/r/{{.}}</a>
-              </p>
-            </div>
-          {{end}}
-        </div>
-      </div>
+      {{range .}}
+          <h2>
+            <a href="/r/{{.}}">/r/{{.}}</a>
+          </h2>
+      {{end}}
     </div>
   </body>
 </html>
