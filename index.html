@@ -2,15 +2,21 @@
 <html>
   <head>
     <title>gifflet</title>
+    <link rel="stylesheet" type="text/css" href="/styles/main.css">
+    <link rel="stylesheet" type="text/css" href="/styles/items.css">
   </head>
   <body>
-    <h1>gifflet</h1>
-    <div class="content">
-      {{range .}}
-          <h2>
-            <a href="/r/{{.}}">/r/{{.}}</a>
-          </h2>
-      {{end}}
+    <div class="wrapper">
+      <h1>gifflet</h1>
+      <div class="items">
+        {{range .}}
+          <div class="item">
+            <h2>
+              <a href="/r/{{.}}">/r/{{.}}</a>
+            </h2>
+          </div>
+        {{end}}
+      </div>
     </div>
   </body>
 </html>
