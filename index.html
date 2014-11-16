@@ -90,11 +90,13 @@
       loadPage(after);
     });
 
-    function swapImgSrc(img) {
-          var a = img.data("src");
-          var b = img.attr("src");
-          img.data("src", b);
-          img.attr("src", a);
+    function setAllToFirstFrameBut(img) {
+      $(".pin img").each(function() {
+        $(this).attr("src", $(this).data("first-frame"));
+      });
+      if (img != null) {
+        img.attr("src", img.data("original"));
+      }
     }
 
     function loadPage(after) {
@@ -109,12 +111,12 @@
         });
 
         $(".pin").click(function() {
-          swapImgSrc($(this).find("img"));
+          setAllToFirstFrameBut($(this).find("img"));
         });
         $(".pin").hover(function() {
-          swapImgSrc($(this).find("img"));
+          setAllToFirstFrameBut($(this).find("img"));
         }, function() {
-          swapImgSrc($(this).find("img"));
+          setAllToFirstFrameBut();
         });
       });
     }
@@ -127,7 +129,6 @@
     }
 
   </script>
-    <div class="content">
-    </div>
+    <div class="content"></div>
   </body>
 </html>
