@@ -24,7 +24,6 @@
         {{range .URLS}}
           <div class="item">
             <img data-first-frame="/gif?url={{.URL | urlquery}}" data-original="{{.URL}}" src="/gif?url={{.URL | urlquery}}" alt="{{.Title}}" />
-            <img style="display:none;" src="{{.URL}}" />
             <p>
               {{.Title}}
             </p>
