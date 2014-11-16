@@ -2,7 +2,7 @@
   <div id="columns">
     {{range .URLS}}
       <div class="pin">
-        <img src="{{.URL}}" alt="{{.Title}}" />
+        <img data-src="{{.URL}}" src="/gif?url={{.URL | urlquery}}" alt="{{.Title}}" />
         <p>
           {{.Title}}
         </p>
