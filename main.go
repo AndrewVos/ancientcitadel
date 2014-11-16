@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/golang/groupcache"
 	"github.com/gorilla/mux"
@@ -144,7 +145,10 @@ func gifFrame(w http.ResponseWriter, r *http.Request) {
 var cacher *groupcache.Group
 
 func main() {
-	cacher = groupcache.NewGroup("gifs", 64<<20, groupcache.GetterFunc(getImage))
+	port := flag.String("port", "8080", "the port to bind to")
+	flag.Parse()
+
+	cacher = groupcache.NewGroup("gifs", 128<<20, groupcache.GetterFunc(getImage))
 	r := mux.NewRouter()
 	r.HandleFunc("/", handler)
 	r.HandleFunc("/page", page)
@@ -152,6 +156,6 @@ func main() {
 	r.HandleFunc("/gif", gifFrame)
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./public/")))
 	http.Handle("/", r)
-	err := http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(":"+*port, nil)
 	log.Fatal(err)
 }
