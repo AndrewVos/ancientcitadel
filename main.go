@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/md5"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -12,6 +13,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"path"
 	"strings"
 	"text/template"
 )
@@ -46,22 +49,43 @@ type URL struct {
 }
 
 func getImage(ctx groupcache.Context, key string, dest groupcache.Sink) error {
-	response, err := http.Get(key)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-	image, err := gif.Decode(response.Body)
-	if err != nil {
-		return err
-	}
+	cachePath := fmt.Sprintf("%x", md5.Sum([]byte(key)))
+	cachePath = path.Join("cache", cachePath)
 
-	buffer := &bytes.Buffer{}
-	err = png.Encode(buffer, image)
-	if err != nil {
-		return err
+	if _, err := os.Stat(cachePath); err == nil {
+		b, err := ioutil.ReadFile(cachePath)
+		if err != nil {
+			return err
+		}
+		dest.SetBytes(b)
+	} else {
+		response, err := http.Get(key)
+		if err != nil {
+			return err
+		}
+		defer response.Body.Close()
+		image, err := gif.Decode(response.Body)
+		if err != nil {
+			return err
+		}
+
+		buffer := &bytes.Buffer{}
+		err = png.Encode(buffer, image)
+		if err != nil {
+			return err
+		}
+
+		err = os.MkdirAll("cache", 0700)
+		if err != nil {
+			return err
+		}
+		bytes := buffer.Bytes()
+		err = ioutil.WriteFile(cachePath, bytes, 0700)
+		if err != nil {
+			return err
+		}
+		dest.SetBytes(bytes)
 	}
-	dest.SetBytes(buffer.Bytes())
 	return nil
 }
 
