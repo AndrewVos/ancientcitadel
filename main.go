@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/md5"
+	"encoding/base64"
 	"flag"
 	"fmt"
 	"github.com/AndrewVos/ancientcitadel/reddit"
@@ -20,6 +21,20 @@ import (
 	"text/template"
 	"time"
 )
+
+var cacher *groupcache.Group
+
+type Page struct {
+	URLs         []URL
+	CurrentPage  int
+	NextPagePath string
+}
+
+type URL struct {
+	Title   string
+	URL     string
+	Preview string
+}
 
 func getImage(ctx groupcache.Context, key string, dest groupcache.Sink) error {
 	cachePath := fmt.Sprintf("%x", md5.Sum([]byte(key)))
@@ -62,12 +77,6 @@ func getImage(ctx groupcache.Context, key string, dest groupcache.Sink) error {
 	return nil
 }
 
-type Page struct {
-	URLs         []reddit.RedditURL
-	CurrentPage  int
-	NextPagePath string
-}
-
 func handler(w http.ResponseWriter, r *http.Request) {
 	template, err := template.ParseFiles("index.html")
 	if err != nil {
@@ -83,7 +92,22 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	if p := mux.Vars(r)["page"]; p != "" {
 		page.CurrentPage, _ = strconv.Atoi(p)
 	}
-	page.URLs = reddit.SubRedditURLs(work, page.CurrentPage, 20)
+
+	for _, redditURL := range reddit.SubRedditURLs(work, page.CurrentPage, 20) {
+		var buffer []byte
+		err := cacher.Get(nil, redditURL.URL, groupcache.AllocatingByteSliceSink(&buffer))
+		if err != nil {
+			log.Print(err)
+			continue
+		}
+		preview := fmt.Sprintf("data:%s;base64,%s", "image/gif", base64.StdEncoding.EncodeToString(buffer))
+		page.URLs = append(page.URLs, URL{
+			Title:   redditURL.Title,
+			URL:     redditURL.URL,
+			Preview: preview,
+		})
+	}
+
 	page.NextPagePath = fmt.Sprintf("/%v/%d", work, page.CurrentPage+1)
 
 	if err != nil {
@@ -98,20 +122,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-
-func gifFrame(w http.ResponseWriter, r *http.Request) {
-	gifURL := r.URL.Query().Get("url")
-	var buf []byte
-	err := cacher.Get(nil, gifURL, groupcache.AllocatingByteSliceSink(&buf))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Print(err)
-		return
-	}
-	w.Write(buf)
-}
-
-var cacher *groupcache.Group
 
 func serveAsset(r *mux.Router, assetPath string) {
 	r.HandleFunc(assetPath, func(w http.ResponseWriter, r *http.Request) {
@@ -144,7 +154,6 @@ func main() {
 	serveAsset(r, "/assets/scripts/gifs.js")
 	serveAsset(r, "/assets/images/loading.gif")
 	r.HandleFunc("/", handler)
-	r.HandleFunc("/gif-frame", gifFrame)
 	r.HandleFunc("/{work}/{page}", handler)
 
 	http.Handle("/", r)

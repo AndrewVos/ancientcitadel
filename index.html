@@ -24,13 +24,10 @@
         {{range .URLs}}
           <div class="item">
             <div class="image-container">
-              <img data-first-frame="/gif-frame?url={{.URL | urlquery}}" data-original="{{.URL}}" src="/gif-frame?url={{.URL | urlquery}}" alt="{{.Title}}" />
+              <img data-original="{{.URL}}" src="{{.Preview}}" alt="{{.Title}}" />
             </div>
             <p>
               {{.Title}}
-            </p>
-            <p>
-              /r/{{.SubReddit}}
             </p>
           </div>
         {{end}}
