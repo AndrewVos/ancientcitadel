@@ -15,7 +15,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"runtime"
 	"strconv"
 	"text/template"
 )
@@ -119,7 +118,7 @@ func serveAsset(r *mux.Router, assetPath string) {
 }
 
 func main() {
-	runtime.GOMAXPROCS(4)
+	// runtime.GOMAXPROCS(4)
 	reddit.UpdateRedditData()
 
 	port := flag.String("port", "8080", "the port to bind to")
@@ -135,6 +134,7 @@ func main() {
 	r.HandleFunc("/{work}/{page}", handler)
 
 	http.Handle("/", r)
+	fmt.Printf("Starting on port %d\n", *port)
 	err := http.ListenAndServe(":"+*port, nil)
 	log.Fatal(err)
 }
