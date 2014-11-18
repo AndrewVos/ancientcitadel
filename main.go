@@ -72,6 +72,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		work = "nsfw"
 	}
 	urls := reddit.SubRedditURLs(work)
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Print(err)

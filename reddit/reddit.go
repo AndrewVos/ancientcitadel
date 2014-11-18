@@ -8,32 +8,36 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 )
 
-func subReddits() map[string][]string {
-	return map[string][]string{
-		"sfw": []string{
-			"gifs", "perfectloops",
-		},
-		"nsfw": []string{
-			"gifsgonewild",
-		},
+type SubReddit struct {
+	Work string
+	Name string
+}
+
+func subReddits() []SubReddit {
+	sfw := []string{
+		"gifs", "perfectloops", "reactiongifs", "creepy_gif", "noisygifs", "analogygifs",
+		"reversegif", "funny_gifs", "funnygifs", "aww_gifs", "wheredidthesodago", "shittyreactiongifs",
+		"adventuretimegifs", "animegifs", "communitygifs", "Movie_GIFs", "tvgifs", "gaming_gifs",
+		"AnimalsBeingJerks", "AnimalGIFs", "birdreactiongifs", "CatGifs", "catreactiongifs", "slothgifs",
+		"Puggifs", "celebgifs", "KimJongUnGifs", "SpaceGifs", "physicsgifs", "educationalgifs",
+		"chemicalreactiongifs", "mechanical_gifs", "cargifs", "wobblegifs", "SurrealGifs",
 	}
-	// return map[string][]string{
-	// 	"sfw": []string{
-	// 		"gifs", "perfectloops", "reactiongifs", "creepy_gif", "noisygifs", "analogygifs",
-	// 		"reversegif", "funny_gifs", "funnygifs", "aww_gifs", "wheredidthesodago", "shittyreactiongifs",
-	// 		"adventuretimegifs", "animegifs", "communitygifs", "Movie_GIFs", "tvgifs", "gaming_gifs",
-	// 		"AnimalsBeingJerks", "AnimalGIFs", "birdreactiongifs", "CatGifs", "catreactiongifs", "slothgifs",
-	// 		"Puggifs", "celebgifs", "KimJongUnGifs", "SpaceGifs", "physicsgifs", "educationalgifs",
-	// 		"chemicalreactiongifs", "mechanical_gifs", "cargifs", "wobblegifs", "SurrealGifs",
-	// 	},
-	// 	"nsfw": []string{
-	// 		"gifsgonewild", "porn_gifs", "PornGifs", "NSFW_SEXY_GIF", "nsfwcelebgifs",
-	// 		"adultgifs", "NSFW_GIF", "nsfw_gifs", "porngif", "cutegirlgifs", "Hot_Women_Gifs",
-	// 		"randomsexygifs", "TittyDrop", "boobbounce", "boobgifs",
-	// 	},
-	// }
+	nsfw := []string{
+		"gifsgonewild", "porn_gifs", "PornGifs", "NSFW_SEXY_GIF", "nsfwcelebgifs",
+		"adultgifs", "NSFW_GIF", "nsfw_gifs", "porngif", "cutegirlgifs", "Hot_Women_Gifs",
+		"randomsexygifs", "TittyDrop", "boobbounce", "boobgifs",
+	}
+	var subReddits []SubReddit
+	for _, s := range sfw {
+		subReddits = append(subReddits, SubReddit{Work: "sfw", Name: s})
+	}
+	for _, s := range nsfw {
+		subReddits = append(subReddits, SubReddit{Work: "nsfw", Name: s})
+	}
+	return subReddits
 }
 
 type RedditResponse struct {
@@ -61,34 +65,33 @@ type RedditPage struct {
 }
 
 type RedditURL struct {
+	Work      string
 	SubReddit string
 	Title     string
 	URL       string
 }
 
-func redditPage(subReddit string, after string) (RedditPage, error) {
-	url := fmt.Sprintf("https://api.reddit.com/r/%v/hot.json", subReddit)
+func redditURLs(subReddit SubReddit, after string) ([]RedditURL, error) {
+	url := fmt.Sprintf("https://api.reddit.com/r/%v/hot.json", subReddit.Name)
 	if after != "" {
 		url += "?after=" + after
 	}
 
 	response, err := http.Get(url)
 	if err != nil {
-		return RedditPage{}, err
+		return []RedditURL{}, err
 	}
 	b, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return RedditPage{}, err
+		return []RedditURL{}, err
 	}
 	var redditResponse RedditResponse
 	err = json.Unmarshal(b, &redditResponse)
 	if err != nil {
-		return RedditPage{}, err
+		return []RedditURL{}, err
 	}
 
-	page := RedditPage{}
-	page.SubReddit = subReddit
-	page.After = redditResponse.Data.After
+	var urls []RedditURL
 	for _, child := range redditResponse.Data.Children {
 		url := child.Data.URL
 		if strings.Contains(url, "imgur.com") && !strings.HasSuffix(url, ".gif") {
@@ -99,21 +102,27 @@ func redditPage(subReddit string, after string) (RedditPage, error) {
 			url += ".gif"
 		}
 
-		page.URLs = append(page.URLs, RedditURL{
-			SubReddit: subReddit,
+		urls = append(urls, RedditURL{
+			Work:      subReddit.Work,
+			SubReddit: subReddit.Name,
 			Title:     child.Data.Title,
 			URL:       url,
 		})
 	}
-	return page, nil
+	return urls, nil
 }
 
 var mutex sync.Mutex
-var cachedRedditURLs map[string][]RedditURL
+var cachedRedditURLs []RedditURL
 
 func SubRedditURLs(work string) []RedditURL {
+	var urls []RedditURL
 	mutex.Lock()
-	urls := cachedRedditURLs[work]
+	for _, url := range cachedRedditURLs {
+		if url.Work == work {
+			urls = append(urls, url)
+		}
+	}
 	mutex.Unlock()
 	return urls
 }
@@ -123,32 +132,41 @@ func init() {
 }
 
 func updateRedditData() {
-	redditPages := map[string][]RedditPage{}
-	redditURLs := map[string][]RedditURL{}
+	var groupedRedditURLs [][]RedditURL
 
-	for _, work := range []string{"sfw", "nsfw"} {
-		subReddits := subReddits()[work]
-		for _, subReddit := range subReddits {
-			fmt.Printf("Getting /r/%v\n", subReddit)
-			page, err := redditPage(subReddit, "")
+	var mutex sync.Mutex
+	var waitGroup sync.WaitGroup
+	for _, subReddit := range subReddits() {
+		waitGroup.Add(1)
+		go func(subReddit SubReddit) {
+			defer waitGroup.Done()
+			start := time.Now()
+			urls, err := redditURLs(subReddit, "")
 			if err != nil {
 				log.Println(err)
-				continue
+				return
 			}
-			redditPages[work] = append(redditPages[work], page)
-		}
+			mutex.Lock()
+			groupedRedditURLs = append(groupedRedditURLs, urls)
+			mutex.Unlock()
 
-		longestSetOfURLs := 0
-		for _, redditPage := range redditPages[work] {
-			if len(redditPage.URLs) > longestSetOfURLs {
-				longestSetOfURLs = len(redditPage.URLs)
-			}
+			elapsed := time.Since(start)
+			log.Printf("Downloading /r/%v took %s", subReddit.Name, elapsed)
+		}(subReddit)
+	}
+	waitGroup.Wait()
+
+	longestSetOfURLs := 0
+	for _, urls := range groupedRedditURLs {
+		if len(urls) > longestSetOfURLs {
+			longestSetOfURLs = len(urls)
 		}
-		for i := 0; i < longestSetOfURLs; i++ {
-			for _, redditPage := range redditPages[work] {
-				if i < len(redditPage.URLs) {
-					redditURLs[work] = append(redditURLs[work], redditPage.URLs[i])
-				}
+	}
+	var redditURLs []RedditURL
+	for i := 0; i < longestSetOfURLs; i++ {
+		for _, urls := range groupedRedditURLs {
+			if i < len(urls) {
+				redditURLs = append(redditURLs, urls[i])
 			}
 		}
 	}
