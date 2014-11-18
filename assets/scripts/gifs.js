@@ -8,7 +8,21 @@ function togglePlaying(img) {
   if (img.attr("src") == original) {
     img.attr("src", firstFrame);
   } else {
-    img.attr("src", original);
+    var complete = function() {
+      img.attr("src", original);
+    };
+    var image = new Image();
+    image.onabort = complete;
+    image.onerror = complete;
+    image.onload = complete;
+    setTimeout(function() {
+      if (img.attr("src") != original) {
+        img.parent().height(img.height())
+        img.parent().width(img.width())
+        img.attr("src", "/assets/images/loading.gif");
+      }
+    }, 100);
+    image.src = original;
   }
 }
 

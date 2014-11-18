@@ -13,8 +13,12 @@
   column-gap: 1em;
 }
 
+.image-container {
+  text-align: center;
+}
+
 .items .item img {
-  width: 100%;
+  max-width: 100%;
 }
 
 .wrapper {
