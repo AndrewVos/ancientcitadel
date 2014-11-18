@@ -112,10 +112,6 @@ func gifFrame(w http.ResponseWriter, r *http.Request) {
 
 var cacher *groupcache.Group
 
-func init() {
-	runtime.GOMAXPROCS(4)
-}
-
 func serveAsset(r *mux.Router, assetPath string) {
 	r.HandleFunc(assetPath, func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, path.Join(".", assetPath))
@@ -123,6 +119,9 @@ func serveAsset(r *mux.Router, assetPath string) {
 }
 
 func main() {
+	runtime.GOMAXPROCS(4)
+	reddit.UpdateRedditData()
+
 	port := flag.String("port", "8080", "the port to bind to")
 	flag.Parse()
 

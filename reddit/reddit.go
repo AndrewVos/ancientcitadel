@@ -132,11 +132,7 @@ func SubRedditURLs(work string, page int, pageSize int) []RedditURL {
 	return pageOfUrls
 }
 
-func init() {
-	updateRedditData()
-}
-
-func updateRedditData() {
+func UpdateRedditData() {
 	var groupedRedditURLs [][]RedditURL
 
 	var mutex sync.Mutex
