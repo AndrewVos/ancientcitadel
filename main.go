@@ -134,7 +134,7 @@ func main() {
 	r.HandleFunc("/{work}/{page}", handler)
 
 	http.Handle("/", r)
-	fmt.Printf("Starting on port %d\n", *port)
+	fmt.Printf("Starting on port %v\n", *port)
 	err := http.ListenAndServe(":"+*port, nil)
 	log.Fatal(err)
 }
