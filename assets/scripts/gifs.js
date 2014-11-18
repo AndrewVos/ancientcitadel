@@ -29,6 +29,9 @@ function togglePlaying(img) {
 }
 
 function loadPage() {
+  var loadingGif = new Image();
+  loadingGif.src = "/assets/images/loading.gif";
+
   $(".item img").on("error", function() {
     $(this).parent().remove();
   });
