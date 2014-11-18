@@ -16,6 +16,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"strconv"
 	"text/template"
 )
 
@@ -60,6 +61,12 @@ func getImage(ctx groupcache.Context, key string, dest groupcache.Sink) error {
 	return nil
 }
 
+type Page struct {
+	URLs         []reddit.RedditURL
+	CurrentPage  int
+	NextPagePath string
+}
+
 func handler(w http.ResponseWriter, r *http.Request) {
 	template, err := template.ParseFiles("index.html")
 	if err != nil {
@@ -71,14 +78,19 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	if mux.Vars(r)["work"] == "nsfw" {
 		work = "nsfw"
 	}
-	urls := reddit.SubRedditURLs(work)
+	page := Page{CurrentPage: 1}
+	if p := mux.Vars(r)["page"]; p != "" {
+		page.CurrentPage, _ = strconv.Atoi(p)
+	}
+	page.URLs = reddit.SubRedditURLs(work, page.CurrentPage, 20)
+	page.NextPagePath = fmt.Sprintf("/%v/%d", work, page.CurrentPage+1)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Print(err)
 		return
 	}
-	err = template.Execute(w, urls)
+	err = template.Execute(w, page)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Print(err)
@@ -104,16 +116,25 @@ func init() {
 	runtime.GOMAXPROCS(4)
 }
 
+func serveAsset(r *mux.Router, assetPath string) {
+	r.HandleFunc(assetPath, func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, path.Join(".", assetPath))
+	})
+}
+
 func main() {
 	port := flag.String("port", "8080", "the port to bind to")
 	flag.Parse()
 
 	cacher = groupcache.NewGroup("gifs", 128<<20, groupcache.GetterFunc(getImage))
 	r := mux.NewRouter()
+	serveAsset(r, "/assets/styles/main.css")
+	serveAsset(r, "/assets/styles/items.css")
+	serveAsset(r, "/assets/scripts/gifs.js")
 	r.HandleFunc("/", handler)
 	r.HandleFunc("/gif-frame", gifFrame)
-	r.HandleFunc("/{work}", handler)
-	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./public/")))
+	r.HandleFunc("/{work}/{page}", handler)
+
 	http.Handle("/", r)
 	err := http.ListenAndServe(":"+*port, nil)
 	log.Fatal(err)
