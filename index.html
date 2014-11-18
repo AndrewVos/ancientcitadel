@@ -4,16 +4,32 @@
     <title>gifflet</title>
     <link rel="stylesheet" type="text/css" href="/styles/main.css">
     <link rel="stylesheet" type="text/css" href="/styles/items.css">
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="/scripts/gifs.js"></script>
+    <style>
+      .next-page {
+        text-align: center;
+        font: 18px Arial, sans-serif;
+        color: #333;
+      }
+    </style>
   </head>
   <body>
     <div class="wrapper">
-      <h1>gifflet</h1>
+      <h1>ANCIENT CITADEL</h1>
+      <p>
+      <a href="/">safe for work</a> / <a href="/nsfw">not safe for work</a>
+      </p>
       <div class="items">
         {{range .}}
           <div class="item">
-            <h2>
-              <a href="/r/{{.}}">/r/{{.}}</a>
-            </h2>
+            <img data-first-frame="/gif-frame?url={{.URL | urlquery}}" data-original="{{.URL}}" src="/gif-frame?url={{.URL | urlquery}}" alt="{{.Title}}" />
+            <p>
+              {{.Title}}
+            </p>
+            <p>
+              /r/{{.SubReddit}}
+            </p>
           </div>
         {{end}}
       </div>

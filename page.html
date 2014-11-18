@@ -2,37 +2,10 @@
 <html>
   <head>
     <title>gifflet</title>
-    <link rel="stylesheet" type="text/css" href="/styles/main.css">
-    <link rel="stylesheet" type="text/css" href="/styles/items.css">
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
-    <script src="/scripts/gifs.js"></script>
   </head>
   <body>
-  <style>
-    .next-page {
-      text-align: center;
-      font: 18px Arial, sans-serif;
-      color: #333;
-    }
-  </style>
 
   <script>
   </script>
-    <div class="wrapper">
-      <h1>gifflet</h1>
-      <div class="items">
-        {{range .URLS}}
-          <div class="item">
-            <img data-first-frame="/gif?url={{.URL | urlquery}}" data-original="{{.URL}}" src="/gif?url={{.URL | urlquery}}" alt="{{.Title}}" />
-            <p>
-              {{.Title}}
-            </p>
-          </div>
-        {{end}}
-      </div>
-      <div class="next-page">
-        <a href="/r/{{.SubReddit}}/{{.After}}">Next Page</a>
-      </div>
-    </div>
   </body>
 </html>
