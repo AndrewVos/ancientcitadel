@@ -5,7 +5,9 @@ $(function() {
 function togglePlaying(img) {
   var original = img.data("original");
   var firstFrame = img.data("first-frame");
-  if (img.attr("src") == original) {
+  var loadingGif = "/assets/images/loading.gif";
+
+  if (img.attr("src") == original || img.attr("src") == loadingGif) {
     img.attr("src", firstFrame);
   } else {
     var complete = function() {
@@ -19,7 +21,7 @@ function togglePlaying(img) {
       if (img.attr("src") != original) {
         img.parent().height(img.height())
         img.parent().width(img.width())
-        img.attr("src", "/assets/images/loading.gif");
+        img.attr("src", loadingGif);
       }
     }, 100);
     image.src = original;
