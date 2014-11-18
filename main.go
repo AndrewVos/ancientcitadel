@@ -17,6 +17,7 @@ import (
 	"path"
 	"strconv"
 	"text/template"
+	"time"
 )
 
 func getImage(ctx groupcache.Context, key string, dest groupcache.Sink) error {
@@ -117,9 +118,19 @@ func serveAsset(r *mux.Router, assetPath string) {
 	})
 }
 
+func updateRedditForever() {
+	reddit.UpdateRedditData()
+	ticker := time.NewTicker(60 * time.Second)
+	go func() {
+		for _ = range ticker.C {
+			reddit.UpdateRedditData()
+		}
+	}()
+}
+
 func main() {
 	// runtime.GOMAXPROCS(4)
-	reddit.UpdateRedditData()
+	updateRedditForever()
 
 	port := flag.String("port", "8080", "the port to bind to")
 	flag.Parse()
