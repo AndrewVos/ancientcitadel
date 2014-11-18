@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"runtime"
 	"strconv"
 	"text/template"
 	"time"
@@ -129,7 +130,8 @@ func updateRedditForever() {
 }
 
 func main() {
-	// runtime.GOMAXPROCS(4)
+	runtime.GOMAXPROCS(4)
+
 	updateRedditForever()
 
 	port := flag.String("port", "8080", "the port to bind to")
