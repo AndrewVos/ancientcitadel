@@ -22,13 +22,13 @@ func subReddits() []SubReddit {
 		"reversegif", "funny_gifs", "funnygifs", "aww_gifs", "wheredidthesodago", "shittyreactiongifs",
 		"adventuretimegifs", "animegifs", "communitygifs", "Movie_GIFs", "tvgifs", "gaming_gifs",
 		"AnimalsBeingJerks", "AnimalGIFs", "birdreactiongifs", "CatGifs", "catreactiongifs", "slothgifs",
-		"Puggifs", "celebgifs", "KimJongUnGifs", "SpaceGifs", "physicsgifs", "educationalgifs",
+		"Puggifs", "KimJongUnGifs", "SpaceGifs", "physicsgifs", "educationalgifs",
 		"chemicalreactiongifs", "mechanical_gifs", "cargifs", "wobblegifs", "SurrealGifs",
 	}
 	nsfw := []string{
 		"gifsgonewild", "porn_gifs", "PornGifs", "NSFW_SEXY_GIF", "nsfwcelebgifs",
 		"adultgifs", "NSFW_GIF", "nsfw_gifs", "porngif", "cutegirlgifs", "Hot_Women_Gifs",
-		"randomsexygifs", "TittyDrop", "boobbounce", "boobgifs",
+		"randomsexygifs", "TittyDrop", "boobbounce", "boobgifs", "celebgifs",
 	}
 	var subReddits []SubReddit
 	for _, s := range sfw {
