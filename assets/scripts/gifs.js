@@ -6,11 +6,14 @@ function togglePlaying(img) {
   var original = img.data("original");
   var firstFrame = img.data("first-frame");
   var loadingGif = "/assets/images/loading.gif";
+  var item = img.parents(".item");
 
   if (img.attr("src") == original || img.attr("src") == loadingGif) {
     img.attr("src", firstFrame);
+    item.css("opacity", 0.2);
   } else {
     var complete = function() {
+      item.css("opacity", 1);
       img.attr("src", original);
     };
     var image = new Image();
@@ -22,6 +25,7 @@ function togglePlaying(img) {
         img.parent().height(img.height())
         img.parent().width(img.width())
         img.attr("src", loadingGif);
+        item.css("opacity", 1);
       }
     }, 100);
     image.src = original;
