@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/AndrewVos/ancientcitadel/reddit"
 	"github.com/golang/groupcache"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"image/gif"
 	"image/jpeg"
@@ -154,8 +155,8 @@ func main() {
 	serveAsset(r, "/assets/scripts/gifs.js")
 	serveAsset(r, "/assets/scripts/instantclick.min.js")
 	serveAsset(r, "/assets/images/loading.gif")
-	r.HandleFunc("/", handler)
-	r.HandleFunc("/{work}/{page}", handler)
+	r.Handle("/", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(handler)))
+	r.Handle("/{work}/{page}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(handler)))
 
 	http.Handle("/", r)
 	fmt.Printf("Starting on port %v\n", *port)
