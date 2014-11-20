@@ -28,6 +28,7 @@
 
 .item {
     opacity: 0.5;
+    cursor: pointer;
     display: inline-block;
     background: #fff;
     padding: 1em;
