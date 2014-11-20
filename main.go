@@ -19,14 +19,17 @@ import (
 	"path"
 	"runtime"
 	"strconv"
+	"sync"
 	"text/template"
 	"time"
 )
 
 var cacher *groupcache.Group
+var mutex sync.Mutex
+var urls map[string][]*URL
 
 type Page struct {
-	URLs         []URL
+	URLs         []*URL
 	CurrentPage  int
 	NextPagePath string
 }
@@ -78,6 +81,35 @@ func getImage(ctx groupcache.Context, key string, dest groupcache.Sink) error {
 	return nil
 }
 
+func getPageOfURLs(work string, page int, pageSize int) []*URL {
+	mutex.Lock()
+	workURLs := urls[work]
+	mutex.Unlock()
+
+	startIndex := (page - 1) * pageSize
+	endIndex := startIndex + pageSize
+	if startIndex >= len(workURLs) {
+		return nil
+	}
+	if endIndex >= len(workURLs) {
+		endIndex = len(workURLs) - 1
+	}
+	pageOfURLs := workURLs[startIndex:endIndex]
+
+	for _, url := range pageOfURLs {
+		if url.Preview == "" {
+			var buffer []byte
+			err := cacher.Get(nil, url.URL, groupcache.AllocatingByteSliceSink(&buffer))
+			if err != nil {
+				log.Print(err)
+				continue
+			}
+			url.Preview = fmt.Sprintf("data:%s;base64,%s", "image/gif", base64.StdEncoding.EncodeToString(buffer))
+		}
+	}
+	return pageOfURLs
+}
+
 func handler(w http.ResponseWriter, r *http.Request) {
 	template, err := template.ParseFiles("index.html")
 	if err != nil {
@@ -94,21 +126,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		page.CurrentPage, _ = strconv.Atoi(p)
 	}
 
-	for _, redditURL := range reddit.SubRedditURLs(work, page.CurrentPage, 20) {
-		var buffer []byte
-		err := cacher.Get(nil, redditURL.URL, groupcache.AllocatingByteSliceSink(&buffer))
-		if err != nil {
-			log.Print(err)
-			continue
-		}
-		preview := fmt.Sprintf("data:%s;base64,%s", "image/gif", base64.StdEncoding.EncodeToString(buffer))
-		page.URLs = append(page.URLs, URL{
-			Title:   redditURL.Title,
-			URL:     redditURL.URL,
-			Preview: preview,
-		})
-	}
-
+	page.URLs = getPageOfURLs(work, page.CurrentPage, 20)
 	page.NextPagePath = fmt.Sprintf("/%v/%d", work, page.CurrentPage+1)
 
 	if err != nil {
@@ -131,11 +149,43 @@ func serveAsset(r *mux.Router, assetPath string) {
 }
 
 func updateRedditForever() {
-	reddit.UpdateRedditData()
+	updateReddit := func() {
+		redditURLs := reddit.GetRedditURLs()
+		newURLs := map[string][]*URL{}
+
+		client := http.Client{}
+		for _, redditURL := range redditURLs {
+			request, err := http.NewRequest("HEAD", redditURL.URL, nil)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			response, err := client.Do(request)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			contentType := response.Header.Get("Content-Type")
+			if contentType != "image/gif" {
+				log.Printf("%v wasn't image/gif, was (%v)\n", redditURL.URL, contentType)
+				continue
+			}
+
+			newURLs[redditURL.Work] = append(newURLs[redditURL.Work], &URL{
+				Title: redditURL.Title,
+				URL:   redditURL.URL,
+			})
+		}
+		mutex.Lock()
+		urls = newURLs
+		mutex.Unlock()
+	}
+
+	updateReddit()
 	ticker := time.NewTicker(60 * time.Second)
 	go func() {
 		for _ = range ticker.C {
-			reddit.UpdateRedditData()
+			updateReddit()
 		}
 	}()
 }

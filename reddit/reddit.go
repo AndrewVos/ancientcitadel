@@ -112,29 +112,7 @@ func redditURLs(subReddit SubReddit, after string) ([]RedditURL, error) {
 	return urls, nil
 }
 
-var mutex sync.Mutex
-var cachedRedditURLs []RedditURL
-
-func SubRedditURLs(work string, page int, pageSize int) []RedditURL {
-	var urls []RedditURL
-	mutex.Lock()
-	for _, url := range cachedRedditURLs {
-		if url.Work == work {
-			urls = append(urls, url)
-		}
-	}
-	mutex.Unlock()
-	startIndex := (page - 1) * pageSize
-	var pageOfUrls []RedditURL
-	for i := startIndex; i < startIndex+pageSize; i++ {
-		if i < len(urls) {
-			pageOfUrls = append(pageOfUrls, urls[i])
-		}
-	}
-	return pageOfUrls
-}
-
-func UpdateRedditData() {
+func GetRedditURLs() []RedditURL {
 	var groupedRedditURLs [][]RedditURL
 
 	var mutex sync.Mutex
@@ -173,7 +151,5 @@ func UpdateRedditData() {
 			}
 		}
 	}
-	mutex.Lock()
-	cachedRedditURLs = redditURLs
-	mutex.Unlock()
+	return redditURLs
 }
