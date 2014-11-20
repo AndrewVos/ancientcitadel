@@ -127,7 +127,9 @@ func SubRedditURLs(work string, page int, pageSize int) []RedditURL {
 	startIndex := (page - 1) * pageSize
 	var pageOfUrls []RedditURL
 	for i := startIndex; i < startIndex+pageSize; i++ {
-		pageOfUrls = append(pageOfUrls, urls[i])
+		if i < len(urls) {
+			pageOfUrls = append(pageOfUrls, urls[i])
+		}
 	}
 	return pageOfUrls
 }
