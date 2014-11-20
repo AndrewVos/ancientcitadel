@@ -1,6 +1,3 @@
-var loadingGif = new Image();
-loadingGif.src = "/assets/images/loading.gif";
-
 $(document).on("click", ".item", function() {
   togglePlaying($(this).find("img"));
 });
@@ -11,10 +8,9 @@ $(document).on("click", ".next-page a", function() {
 
 function togglePlaying(img) {
   var original = img.data("original");
-  var loadingGif = "/assets/images/loading.gif";
   var item = img.parents(".item");
 
-  if (img.attr("src") == original || img.attr("src") == loadingGif) {
+  if (img.attr("src") == original) {
     img.attr("src", img.data("preview"));
     item.css("opacity", 0.5);
   } else {
@@ -32,7 +28,7 @@ function togglePlaying(img) {
       if (img.attr("src") != original) {
         img.parent().height(img.height())
         img.parent().width(img.width())
-        img.attr("src", loadingGif);
+        img.attr("src", "");
         item.css("opacity", 1);
       }
     }, 100);
