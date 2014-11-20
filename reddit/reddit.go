@@ -72,7 +72,7 @@ type RedditURL struct {
 }
 
 func redditURLs(subReddit SubReddit, after string) ([]RedditURL, error) {
-	url := fmt.Sprintf("https://api.reddit.com/r/%v/hot.json", subReddit.Name)
+	url := fmt.Sprintf("https://api.reddit.com/r/%v/top.json", subReddit.Name)
 	if after != "" {
 		url += "?after=" + after
 	}
