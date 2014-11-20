@@ -5,6 +5,10 @@ $(document).on("click", ".item", function() {
   togglePlaying($(this).find("img"));
 });
 
+$(document).on("click", ".next-page a", function() {
+  $(this).slideUp();
+});
+
 function togglePlaying(img) {
   var original = img.data("original");
   var loadingGif = "/assets/images/loading.gif";
