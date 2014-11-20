@@ -1,5 +1,8 @@
-$(function() {
-  loadPage();
+var loadingGif = new Image();
+loadingGif.src = "/assets/images/loading.gif";
+
+$(document).on("click", ".item", function() {
+  togglePlaying($(this).find("img"));
 });
 
 function togglePlaying(img) {
@@ -31,13 +34,4 @@ function togglePlaying(img) {
     }, 100);
     image.src = original;
   }
-}
-
-function loadPage() {
-  var loadingGif = new Image();
-  loadingGif.src = "/assets/images/loading.gif";
-
-  $(".item").click(function() {
-    togglePlaying($(this).find("img"));
-  });
 }
