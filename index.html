@@ -21,12 +21,18 @@
       <p>
       <a href="/sfw/1">safe for work</a> / <a href="/nsfw/1">not safe for work</a>
       </p>
-      <div class="items">
+      <div class="gifs">
         {{range .URLs}}
           <div class="item">
-            <div class="image-container">
-              <img data-original="{{.URL}}" src="{{.Preview}}" alt="{{.Title}}" />
-            </div>
+            <video
+              class="gif"
+              width="{{.Data.Width}}"
+              height="{{.Data.Height}}"
+              src="{{.Data.WebMURL}}"
+              controls
+              preload="metadata"
+              loop
+            ></video>
             <p>
               {{.Title}}
             </p>

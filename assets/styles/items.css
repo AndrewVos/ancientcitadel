@@ -17,8 +17,9 @@
   text-align: center;
 }
 
-.items .item img {
-  max-width: 100%;
+.items .item .gif {
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 .wrapper {
@@ -27,13 +28,11 @@
 }
 
 .item {
-    opacity: 0.5;
     cursor: pointer;
     display: inline-block;
     background: #fff;
     padding: 1em;
     margin: 0 0 1.5em;
-    width: 100%;
     box-sizing: border-box;
     -moz-box-sizing: border-box;
     -webkit-box-sizing: border-box;

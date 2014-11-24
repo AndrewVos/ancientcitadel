@@ -1,20 +1,17 @@
 package main
 
 import (
-	"bytes"
-	"crypto/md5"
-	"encoding/base64"
+	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/AndrewVos/ancientcitadel/reddit"
-	"github.com/golang/groupcache"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"image/gif"
-	"image/jpeg"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"runtime"
@@ -24,7 +21,6 @@ import (
 	"time"
 )
 
-var cacher *groupcache.Group
 var mutex sync.Mutex
 var urls map[string][]*URL
 
@@ -35,50 +31,75 @@ type Page struct {
 }
 
 type URL struct {
-	Title   string
-	URL     string
-	Preview string
+	Title string
+	URL   string
+	Data  GfyCatInformation
 }
 
-func getImage(ctx groupcache.Context, key string, dest groupcache.Sink) error {
-	cachePath := fmt.Sprintf("%x", md5.Sum([]byte(key)))
-	cachePath = path.Join("cache", cachePath)
+type GfyCatInformation struct {
+	WebMURL string
+	Width   int
+	Height  int
+}
 
-	if _, err := os.Stat(cachePath); err == nil {
-		b, err := ioutil.ReadFile(cachePath)
-		if err != nil {
-			return err
-		}
-		dest.SetBytes(b)
-	} else {
-		response, err := http.Get(key)
-		if err != nil {
-			return err
-		}
-		defer response.Body.Close()
-		image, err := gif.Decode(response.Body)
-		if err != nil {
-			return err
-		}
-
-		buffer := &bytes.Buffer{}
-		err = jpeg.Encode(buffer, image, &jpeg.Options{50})
-		if err != nil {
-			return err
-		}
-
-		err = os.MkdirAll("cache", 0700)
-		if err != nil {
-			return err
-		}
-		bytes := buffer.Bytes()
-		err = ioutil.WriteFile(cachePath, bytes, 0700)
-		if err != nil {
-			return err
-		}
-		dest.SetBytes(bytes)
+func GetGfyCatInformation(gifURL string) (GfyCatInformation, error) {
+	type UploadedGif struct {
+		Error   string `json:"error"`
+		GfyName string `json:"gfyname"`
+		WebMURL string `json:"webmUrl"`
 	}
-	return nil
+	type GfyItem struct {
+		Width  int
+		Height int
+	}
+
+	uploadURL := fmt.Sprintf("http://upload.gfycat.com/transcode?fetchUrl=%v", url.QueryEscape(gifURL))
+	uploadResponse, err := http.Get(uploadURL)
+	if err != nil {
+		return GfyCatInformation{}, errors.New(fmt.Sprintf("couldn't upload gif to gfycat, but got this?\n%v\n", err))
+	}
+	defer uploadResponse.Body.Close()
+	b, err := ioutil.ReadAll(uploadResponse.Body)
+	if err != nil {
+		return GfyCatInformation{}, errors.New(fmt.Sprintf("Couldn't read body from %v", uploadURL))
+	}
+	var uploadedGif UploadedGif
+	err = json.Unmarshal(b, &uploadedGif)
+
+	if err != nil {
+		return GfyCatInformation{}, errors.New(
+			fmt.Sprintf("couldn't decode this from gfycat:\n%v\nError:\n%v\nURL: %v", string(b), err, uploadURL),
+		)
+	}
+	if uploadedGif.Error != "" {
+		return GfyCatInformation{}, errors.New(fmt.Sprintf("got error from url %q\n%v", uploadURL, uploadedGif.Error))
+	}
+
+	getURL := fmt.Sprintf("http://gfycat.com/cajax/get/%v", uploadedGif.GfyName)
+	getResponse, err := http.Get(getURL)
+	if err != nil {
+		return GfyCatInformation{}, errors.New(fmt.Sprintf("couldn't get gif from gfycat, but got this?\n%v\n", err))
+	}
+
+	b, err = ioutil.ReadAll(getResponse.Body)
+	if err != nil {
+		return GfyCatInformation{}, errors.New(fmt.Sprintf("Couldn't read body from %v", getURL))
+	}
+	defer getResponse.Body.Close()
+
+	var j map[string]GfyItem
+	err = json.Unmarshal(b, &j)
+	if err != nil {
+		return GfyCatInformation{}, errors.New(
+			fmt.Sprintf("couldn't decode this from gfycat:\n%v\nError:\n%v\nURL: %v", string(b), err, getURL),
+		)
+	}
+
+	return GfyCatInformation{
+		WebMURL: uploadedGif.WebMURL,
+		Width:   j["gfyItem"].Width,
+		Height:  j["gfyItem"].Height,
+	}, nil
 }
 
 func getPageOfURLs(work string, page int, pageSize int) []*URL {
@@ -95,18 +116,6 @@ func getPageOfURLs(work string, page int, pageSize int) []*URL {
 		endIndex = len(workURLs) - 1
 	}
 	pageOfURLs := workURLs[startIndex:endIndex]
-
-	for _, url := range pageOfURLs {
-		if url.Preview == "" {
-			var buffer []byte
-			err := cacher.Get(nil, url.URL, groupcache.AllocatingByteSliceSink(&buffer))
-			if err != nil {
-				log.Print(err)
-				continue
-			}
-			url.Preview = fmt.Sprintf("data:%s;base64,%s", "image/gif", base64.StdEncoding.EncodeToString(buffer))
-		}
-	}
 	return pageOfURLs
 }
 
@@ -171,9 +180,15 @@ func updateRedditForever() {
 				continue
 			}
 
+			information, err := GetGfyCatInformation(redditURL.URL)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
 			newURLs[redditURL.Work] = append(newURLs[redditURL.Work], &URL{
 				Title: redditURL.Title,
 				URL:   redditURL.URL,
+				Data:  information,
 			})
 		}
 		mutex.Lock()
@@ -181,12 +196,14 @@ func updateRedditForever() {
 		mutex.Unlock()
 	}
 
-	updateReddit()
-	ticker := time.NewTicker(60 * time.Second)
 	go func() {
-		for _ = range ticker.C {
-			updateReddit()
-		}
+		updateReddit()
+		ticker := time.NewTicker(600 * time.Second)
+		go func() {
+			for _ = range ticker.C {
+				updateReddit()
+			}
+		}()
 	}()
 }
 
@@ -198,7 +215,6 @@ func main() {
 	port := flag.String("port", "8080", "the port to bind to")
 	flag.Parse()
 
-	cacher = groupcache.NewGroup("gifs", 128<<20, groupcache.GetterFunc(getImage))
 	r := mux.NewRouter()
 	serveAsset(r, "/assets/styles/main.css")
 	serveAsset(r, "/assets/styles/items.css")
