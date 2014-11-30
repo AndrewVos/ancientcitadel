@@ -17,7 +17,8 @@
   text-align: center;
 }
 
-.items .item .gif {
+.gif {
+  cursor: pointer;
   width: 100% !important;
   max-width: 100% !important;
 }
@@ -28,7 +29,6 @@
 }
 
 .item {
-    cursor: pointer;
     display: inline-block;
     background: #fff;
     padding: 1em;
