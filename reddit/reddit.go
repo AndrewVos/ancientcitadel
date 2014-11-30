@@ -11,12 +11,12 @@ import (
 	"time"
 )
 
-type SubReddit struct {
+type subReddit struct {
 	Work string
 	Name string
 }
 
-func subReddits() []SubReddit {
+func subReddits() []subReddit {
 	sfw := []string{
 		"gifs", "perfectloops", "reactiongifs", "creepy_gif", "noisygifs", "analogygifs",
 		"reversegif", "funny_gifs", "funnygifs", "aww_gifs", "wheredidthesodago", "shittyreactiongifs",
@@ -30,30 +30,30 @@ func subReddits() []SubReddit {
 		"adultgifs", "NSFW_GIF", "nsfw_gifs", "porngif", "cutegirlgifs", "Hot_Women_Gifs",
 		"randomsexygifs", "TittyDrop", "boobbounce", "boobgifs", "celebgifs",
 	}
-	var subReddits []SubReddit
+	var subReddits []subReddit
 	for _, s := range sfw {
-		subReddits = append(subReddits, SubReddit{Work: "sfw", Name: s})
+		subReddits = append(subReddits, subReddit{Work: "sfw", Name: s})
 	}
 	for _, s := range nsfw {
-		subReddits = append(subReddits, SubReddit{Work: "nsfw", Name: s})
+		subReddits = append(subReddits, subReddit{Work: "nsfw", Name: s})
 	}
 	return subReddits
 }
 
-type RedditResponse struct {
-	Data RedditResponseData
+type redditResponse struct {
+	Data redditResponseData
 }
 
-type RedditResponseData struct {
+type redditResponseData struct {
 	After    string
-	Children []RedditResponseChild
+	Children []redditResponseChild
 }
 
-type RedditResponseChild struct {
-	Data RedditResponseChildData
+type redditResponseChild struct {
+	Data redditResponseChildData
 }
 
-type RedditResponseChildData struct {
+type redditResponseChildData struct {
 	Permalink string
 	Title     string
 	URL       string
@@ -61,13 +61,13 @@ type RedditResponseChildData struct {
 
 type RedditURL struct {
 	Work      string
-	SubReddit string
+	subReddit string
 	Title     string
 	URL       string
 	Permalink string
 }
 
-func redditURLs(subReddit SubReddit, after string) ([]RedditURL, error) {
+func redditURLs(subReddit subReddit, after string) ([]RedditURL, error) {
 	url := fmt.Sprintf("https://api.reddit.com/r/%v/top.json", subReddit.Name)
 	if after != "" {
 		url += "?after=" + after
@@ -81,7 +81,7 @@ func redditURLs(subReddit SubReddit, after string) ([]RedditURL, error) {
 	if err != nil {
 		return []RedditURL{}, err
 	}
-	var redditResponse RedditResponse
+	var redditResponse redditResponse
 	err = json.Unmarshal(b, &redditResponse)
 	if err != nil {
 		return []RedditURL{}, err
@@ -100,7 +100,7 @@ func redditURLs(subReddit SubReddit, after string) ([]RedditURL, error) {
 
 		urls = append(urls, RedditURL{
 			Work:      subReddit.Work,
-			SubReddit: subReddit.Name,
+			subReddit: subReddit.Name,
 			Title:     child.Data.Title,
 			URL:       url,
 			Permalink: child.Data.Permalink,
@@ -114,12 +114,12 @@ func GetRedditURLs() []RedditURL {
 
 	var mutex sync.Mutex
 	var waitGroup sync.WaitGroup
-	for _, subReddit := range subReddits() {
+	for _, sr := range subReddits() {
 		waitGroup.Add(1)
-		go func(subReddit SubReddit) {
+		go func(sr subReddit) {
 			defer waitGroup.Done()
 			start := time.Now()
-			urls, err := redditURLs(subReddit, "")
+			urls, err := redditURLs(sr, "")
 			if err != nil {
 				log.Println(err)
 				return
@@ -129,8 +129,8 @@ func GetRedditURLs() []RedditURL {
 			mutex.Unlock()
 
 			elapsed := time.Since(start)
-			log.Printf("Downloading /r/%v took %s", subReddit.Name, elapsed)
-		}(subReddit)
+			log.Printf("Downloading /r/%v took %s", sr.Name, elapsed)
+		}(sr)
 	}
 	waitGroup.Wait()
 
