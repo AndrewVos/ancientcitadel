@@ -54,14 +54,9 @@ type RedditResponseChild struct {
 }
 
 type RedditResponseChildData struct {
-	Title string
-	URL   string
-}
-
-type RedditPage struct {
-	SubReddit string
-	After     string
-	URLs      []RedditURL `json:"urls"`
+	Permalink string
+	Title     string
+	URL       string
 }
 
 type RedditURL struct {
@@ -69,6 +64,7 @@ type RedditURL struct {
 	SubReddit string
 	Title     string
 	URL       string
+	Permalink string
 }
 
 func redditURLs(subReddit SubReddit, after string) ([]RedditURL, error) {
@@ -107,6 +103,7 @@ func redditURLs(subReddit SubReddit, after string) ([]RedditURL, error) {
 			SubReddit: subReddit.Name,
 			Title:     child.Data.Title,
 			URL:       url,
+			Permalink: child.Data.Permalink,
 		})
 	}
 	return urls, nil

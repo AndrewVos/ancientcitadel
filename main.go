@@ -29,6 +29,7 @@ type URL struct {
 	CreatedAt time.Time `db:"created_at"`
 	Work      string    `db:"work"`
 	Title     string    `db:"title"`
+	SourceURL string    `db:"source_url"`
 	URL       string    `db:"url"`
 	WebMURL   string    `db:"webmurl"`
 	Width     int       `db:"width"`
@@ -92,6 +93,7 @@ func updateRedditForever() {
 			urls = append(urls, URL{
 				Work:      redditURL.Work,
 				Title:     redditURL.Title,
+				SourceURL: "https://reddit.com" + redditURL.Permalink,
 				URL:       redditURL.URL,
 				WebMURL:   information.WebMURL,
 				Width:     information.Width,
@@ -164,14 +166,15 @@ func saveURLs(urls []URL) error {
 	for _, url := range urls {
 		_, err := tx.Exec(`
 	INSERT INTO urls (
-		created_at, work, title, url, webmurl, width, height
+		created_at, work, title, url, source_url, webmurl, width, height
 	) VALUES (
-		$1, $2, $3, $4, $5, $6, $7
+		$1, $2, $3, $4, $5, $6, $7, $8
 	)`,
 			url.CreatedAt,
 			url.Work,
 			url.Title,
 			url.URL,
+			url.SourceURL,
 			url.WebMURL,
 			url.Width,
 			url.Height,
@@ -245,6 +248,15 @@ func migrate() {
 			width   INTEGER,
 			height  INTEGER
 		);
+		DO $$
+			BEGIN
+				BEGIN
+					ALTER TABLE urls ADD COLUMN source_url TEXT;
+				EXCEPTION
+					WHEN duplicate_column THEN RAISE NOTICE 'column source_url already exists in url.';
+				END;
+			END;
+		$$
 	`
 	db.MustExec(schema)
 }
