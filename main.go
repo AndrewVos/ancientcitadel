@@ -1,122 +1,38 @@
 package main
 
 import (
-	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
+	"github.com/AndrewVos/ancientcitadel/gfycat"
 	"github.com/AndrewVos/ancientcitadel/reddit"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"io/ioutil"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"runtime"
 	"strconv"
-	"sync"
 	"text/template"
 	"time"
 )
 
-var mutex sync.Mutex
-var urls map[string][]*URL
-
 type Page struct {
-	URLs         []*URL
+	URLs         []URL
 	CurrentPage  int
 	NextPagePath string
 }
 
 type URL struct {
-	Title string
-	URL   string
-	Data  GfyCatInformation
-}
-
-type GfyCatInformation struct {
-	WebMURL string
-	Width   int
-	Height  int
-}
-
-func GetGfyCatInformation(gifURL string) (GfyCatInformation, error) {
-	type UploadedGif struct {
-		Error   string `json:"error"`
-		GfyName string `json:"gfyname"`
-		WebMURL string `json:"webmUrl"`
-	}
-	type GfyItem struct {
-		Width  int
-		Height int
-	}
-
-	uploadURL := fmt.Sprintf("http://upload.gfycat.com/transcode?fetchUrl=%v", url.QueryEscape(gifURL))
-	uploadResponse, err := http.Get(uploadURL)
-	if err != nil {
-		return GfyCatInformation{}, errors.New(fmt.Sprintf("couldn't upload gif to gfycat, but got this?\n%v\n", err))
-	}
-	defer uploadResponse.Body.Close()
-	b, err := ioutil.ReadAll(uploadResponse.Body)
-	if err != nil {
-		return GfyCatInformation{}, errors.New(fmt.Sprintf("Couldn't read body from %v", uploadURL))
-	}
-	var uploadedGif UploadedGif
-	err = json.Unmarshal(b, &uploadedGif)
-
-	if err != nil {
-		return GfyCatInformation{}, errors.New(
-			fmt.Sprintf("couldn't decode this from gfycat:\n%v\nError:\n%v\nURL: %v", string(b), err, uploadURL),
-		)
-	}
-	if uploadedGif.Error != "" {
-		return GfyCatInformation{}, errors.New(fmt.Sprintf("got error from url %q\n%v", uploadURL, uploadedGif.Error))
-	}
-
-	getURL := fmt.Sprintf("http://gfycat.com/cajax/get/%v", uploadedGif.GfyName)
-	getResponse, err := http.Get(getURL)
-	if err != nil {
-		return GfyCatInformation{}, errors.New(fmt.Sprintf("couldn't get gif from gfycat, but got this?\n%v\n", err))
-	}
-
-	b, err = ioutil.ReadAll(getResponse.Body)
-	if err != nil {
-		return GfyCatInformation{}, errors.New(fmt.Sprintf("Couldn't read body from %v", getURL))
-	}
-	defer getResponse.Body.Close()
-
-	var j map[string]GfyItem
-	err = json.Unmarshal(b, &j)
-	if err != nil {
-		return GfyCatInformation{}, errors.New(
-			fmt.Sprintf("couldn't decode this from gfycat:\n%v\nError:\n%v\nURL: %v", string(b), err, getURL),
-		)
-	}
-
-	return GfyCatInformation{
-		WebMURL: uploadedGif.WebMURL,
-		Width:   j["gfyItem"].Width,
-		Height:  j["gfyItem"].Height,
-	}, nil
-}
-
-func getPageOfURLs(work string, page int, pageSize int) []*URL {
-	mutex.Lock()
-	workURLs := urls[work]
-	mutex.Unlock()
-
-	startIndex := (page - 1) * pageSize
-	endIndex := startIndex + pageSize
-	if startIndex >= len(workURLs) {
-		return nil
-	}
-	if endIndex >= len(workURLs) {
-		endIndex = len(workURLs) - 1
-	}
-	pageOfURLs := workURLs[startIndex:endIndex]
-	return pageOfURLs
+	CreatedAt time.Time `db:"created_at"`
+	Work      string    `db:"work"`
+	Title     string    `db:"title"`
+	URL       string    `db:"url"`
+	WebMURL   string    `db:"webmurl"`
+	Width     int       `db:"width"`
+	Height    int       `db:"height"`
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -135,7 +51,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		page.CurrentPage, _ = strconv.Atoi(p)
 	}
 
-	page.URLs = getPageOfURLs(work, page.CurrentPage, 20)
+	page.URLs, err = getURLs(work, page.CurrentPage, 20)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Print(err)
+		return
+	}
 	page.NextPagePath = fmt.Sprintf("/%v/%d", work, page.CurrentPage+1)
 
 	if err != nil {
@@ -160,40 +81,29 @@ func serveAsset(r *mux.Router, assetPath string) {
 func updateRedditForever() {
 	updateReddit := func() {
 		redditURLs := reddit.GetRedditURLs()
-		newURLs := map[string][]*URL{}
+		urls := []URL{}
 
-		client := http.Client{}
 		for _, redditURL := range redditURLs {
-			request, err := http.NewRequest("HEAD", redditURL.URL, nil)
+			information, err := gfycat.Gif(redditURL.URL)
 			if err != nil {
 				log.Println(err)
 				continue
 			}
-			response, err := client.Do(request)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-			contentType := response.Header.Get("Content-Type")
-			if contentType != "image/gif" {
-				log.Printf("%v wasn't image/gif, was (%v)\n", redditURL.URL, contentType)
-				continue
-			}
-
-			information, err := GetGfyCatInformation(redditURL.URL)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-			newURLs[redditURL.Work] = append(newURLs[redditURL.Work], &URL{
-				Title: redditURL.Title,
-				URL:   redditURL.URL,
-				Data:  information,
+			urls = append(urls, URL{
+				Work:      redditURL.Work,
+				Title:     redditURL.Title,
+				URL:       redditURL.URL,
+				WebMURL:   information.WebMURL,
+				Width:     information.Width,
+				Height:    information.Height,
+				CreatedAt: time.Now(),
 			})
 		}
-		mutex.Lock()
-		urls = newURLs
-		mutex.Unlock()
+		log.Printf("Storing %d urls\n", len(urls))
+		err := saveURLs(urls)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 
 	go func() {
@@ -207,8 +117,80 @@ func updateRedditForever() {
 	}()
 }
 
+func getURLs(work string, page int, pageSize int) ([]URL, error) {
+	db, err := db()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := db.Queryx(`
+	SELECT * FROM urls
+		WHERE work = $1
+		ORDER BY created_at DESC
+		LIMIT $2
+		OFFSET $3`,
+		work, pageSize, page*pageSize)
+	if err != nil {
+		return nil, err
+	}
+	var urls []URL
+	for rows.Next() {
+		var url URL
+		err := rows.StructScan(&url)
+		if err != nil {
+			return nil, err
+		}
+		urls = append(urls, url)
+	}
+	return urls, nil
+}
+
+func saveURLs(urls []URL) error {
+	db, err := db()
+	if err != nil {
+		return err
+	}
+	tx, err := db.Beginx()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec("DELETE FROM urls")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	for _, url := range urls {
+		_, err := tx.Exec(`
+	INSERT INTO urls (
+		created_at, work, title, url, webmurl, width, height
+	) VALUES (
+		$1, $2, $3, $4, $5, $6, $7
+	)`,
+			url.CreatedAt,
+			url.Work,
+			url.Title,
+			url.URL,
+			url.WebMURL,
+			url.Width,
+			url.Height,
+		)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func main() {
 	runtime.GOMAXPROCS(4)
+	migrate()
 
 	updateRedditForever()
 
@@ -228,4 +210,41 @@ func main() {
 	fmt.Printf("Starting on port %v\n", *port)
 	err := http.ListenAndServe(":"+*port, nil)
 	log.Fatal(err)
+}
+
+var database *sqlx.DB
+
+func db() (*sqlx.DB, error) {
+	if database == nil {
+		if databaseURL := os.Getenv("DATABASE_URL"); databaseURL != "" {
+			db, err := sqlx.Connect("postgres", databaseURL)
+			database = db
+			return db, err
+		}
+		db, err := sqlx.Connect("postgres", "host=/var/run/postgresql dbname=ancientcitadel sslmode=disable")
+		database = db
+		return database, err
+	} else {
+		return database, database.Ping()
+	}
+}
+
+func migrate() {
+	db, err := db()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	schema := `
+		CREATE TABLE IF NOT EXISTS urls(
+			created_at TIMESTAMP,
+			work    TEXT,
+			title   TEXT,
+			url     TEXT,
+			webmurl TEXT,
+			width   INTEGER,
+			height  INTEGER
+		);
+	`
+	db.MustExec(schema)
 }
