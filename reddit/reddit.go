@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -112,27 +111,17 @@ func redditURLs(subReddit subReddit, after string) ([]RedditURL, error) {
 func GetRedditURLs() []RedditURL {
 	var groupedRedditURLs [][]RedditURL
 
-	var mutex sync.Mutex
-	var waitGroup sync.WaitGroup
 	for _, sr := range subReddits() {
-		waitGroup.Add(1)
-		go func(sr subReddit) {
-			defer waitGroup.Done()
-			start := time.Now()
-			urls, err := redditURLs(sr, "")
-			if err != nil {
-				log.Println(err)
-				return
-			}
-			mutex.Lock()
-			groupedRedditURLs = append(groupedRedditURLs, urls)
-			mutex.Unlock()
-
-			elapsed := time.Since(start)
-			log.Printf("Downloading /r/%v took %s", sr.Name, elapsed)
-		}(sr)
+		log.Printf("Downloading /r/%v\n", sr.Name)
+		urls, err := redditURLs(sr, "")
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		groupedRedditURLs = append(groupedRedditURLs, urls)
+		log.Println("Sleeping for 2 seconds...")
+		time.Sleep(2 * time.Second)
 	}
-	waitGroup.Wait()
 
 	longestSetOfURLs := 0
 	for _, urls := range groupedRedditURLs {

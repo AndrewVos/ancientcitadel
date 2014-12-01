@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/AndrewVos/ancientcitadel/gfycat"
@@ -148,6 +149,9 @@ func getURLs(work string, page int, pageSize int) ([]URL, error) {
 }
 
 func saveURLs(urls []URL) error {
+	if len(urls) == 0 {
+		return errors.New("Not going to save zero urls?!")
+	}
 	db, err := db()
 	if err != nil {
 		return err
@@ -205,6 +209,7 @@ func main() {
 	serveAsset(r, "/assets/styles/items.css")
 	serveAsset(r, "/assets/scripts/gifs.js")
 	serveAsset(r, "/assets/scripts/instantclick.min.js")
+	serveAsset(r, "/assets/scripts/packery.pkgd.min.js")
 	serveAsset(r, "/assets/images/loading.gif")
 	r.Handle("/", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(handler)))
 	r.Handle("/{work}/{page}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(handler)))

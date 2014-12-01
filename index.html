@@ -5,6 +5,7 @@
     <link rel="stylesheet" type="text/css" href="/assets/styles/main.css">
     <link rel="stylesheet" type="text/css" href="/assets/styles/items.css">
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="/assets/scripts/packery.pkgd.min.js"></script>
     <script src="/assets/scripts/gifs.js"></script>
     <style>
       .next-page {
@@ -21,23 +22,22 @@
       <p>
       <a href="/sfw/1">safe for work</a> / <a href="/nsfw/1">not safe for work</a>
       </p>
-      <div class="gifs">
+      <div class="items">
         {{range .URLs}}
           <div class="item">
             <video
               class="gif"
-              width="{{.Width}}"
-              height="{{.Height}}"
+              data-width="{{.Width}}"
+              data-height="{{.Height}}"
               src="{{.WebMURL}}"
               preload="metadata"
               loop
             ></video>
-            <p>
+            <div>
               {{.Title}}
-            </p>
-            <p>
-            <a href="{{.URL}}">link</a> / <a href="{{.SourceURL}}">comments</a>
-            </p>
+              <br>
+              <a href="{{.URL}}">link</a> / <a href="{{.SourceURL}}">comments</a>
+            </div>
           </div>
         {{end}}
       </div>
@@ -46,6 +46,16 @@
       </div>
     </div>
     <script src="/assets/scripts/instantclick.min.js" data-no-instant></script>
-    <script data-no-instant>InstantClick.init();</script>
+    <script data-no-instant>
+      InstantClick.init();
+      InstantClick.on('change', function() {
+        moveGifsAround();
+        packery();
+      });
+      $(function() {
+        moveGifsAround();
+        packery();
+      });
+    </script>
   </body>
 </html>
