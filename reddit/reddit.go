@@ -18,7 +18,7 @@ type subReddit struct {
 
 func subReddits() []subReddit {
 	sfw := []string{
-		"gifs", "perfectloops", "reactiongifs", "creepy_gif", "noisygifs", "analogygifs",
+		"gifs", "perfectloops", "creepy_gif", "noisygifs", "analogygifs",
 		"reversegif", "funny_gifs", "funnygifs", "aww_gifs", "wheredidthesodago", "shittyreactiongifs",
 		"adventuretimegifs", "animegifs", "communitygifs", "Movie_GIFs", "tvgifs", "gaming_gifs",
 		"AnimalsBeingJerks", "AnimalGIFs", "birdreactiongifs", "CatGifs", "catreactiongifs", "slothgifs",
