@@ -100,6 +100,7 @@ func updateSubReddit(work string, name string) error {
 		if len(redditURLs) == 0 {
 			return nil
 		}
+		log.Printf("Downloaded %d urls from /r/%v\n", len(redditURLs), name)
 		for _, redditURL := range redditURLs {
 			sourceURL := "https://reddit.com" + redditURL.Permalink
 
