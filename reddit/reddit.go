@@ -70,7 +70,7 @@ func redditURLs(subReddit subReddit, pages int) ([]RedditURL, error) {
 	var urls []RedditURL
 
 	for page := 0; page < pages; page++ {
-		log.Printf("Downloading top urls from /r/%v, page %d\n", subReddit.Name, page+1)
+		log.Printf("Downloading top urls from /r/%v, page %d, after %v\n", subReddit.Name, page+1, after)
 		url := fmt.Sprintf("https://api.reddit.com/r/%v/top.json", subReddit.Name)
 		if after != "" {
 			url += "?after=" + after
@@ -89,6 +89,7 @@ func redditURLs(subReddit subReddit, pages int) ([]RedditURL, error) {
 		if err != nil {
 			return urls, err
 		}
+		after = redditResponse.Data.After
 
 		for _, child := range redditResponse.Data.Children {
 			url := child.Data.URL
