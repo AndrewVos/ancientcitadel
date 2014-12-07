@@ -33,6 +33,7 @@ type URL struct {
 	SourceURL string    `db:"source_url"`
 	URL       string    `db:"url"`
 	WebMURL   string    `db:"webmurl"`
+	MP4URL    string    `db:"mp4url"`
 	Width     int       `db:"width"`
 	Height    int       `db:"height"`
 }
@@ -97,6 +98,7 @@ func updateRedditForever() {
 				SourceURL: "https://reddit.com" + redditURL.Permalink,
 				URL:       redditURL.URL,
 				WebMURL:   information.WebMURL,
+				MP4URL:    information.MP4URL,
 				Width:     information.Width,
 				Height:    information.Height,
 				CreatedAt: time.Now(),
@@ -170,9 +172,9 @@ func saveURLs(urls []URL) error {
 	for _, url := range urls {
 		_, err := tx.Exec(`
 	INSERT INTO urls (
-		created_at, work, title, url, source_url, webmurl, width, height
+		created_at, work, title, url, source_url, webmurl, mp4url, width, height
 	) VALUES (
-		$1, $2, $3, $4, $5, $6, $7, $8
+		$1, $2, $3, $4, $5, $6, $7, $8, $9
 	)`,
 			url.CreatedAt,
 			url.Work,
@@ -180,6 +182,7 @@ func saveURLs(urls []URL) error {
 			url.URL,
 			url.SourceURL,
 			url.WebMURL,
+			url.MP4URL,
 			url.Width,
 			url.Height,
 		)
@@ -258,7 +261,17 @@ func migrate() {
 				BEGIN
 					ALTER TABLE urls ADD COLUMN source_url TEXT;
 				EXCEPTION
-					WHEN duplicate_column THEN RAISE NOTICE 'column source_url already exists in url.';
+					WHEN duplicate_column THEN RAISE NOTICE 'column source_url already exists in urls.';
+				END;
+			END;
+		$$;
+
+		DO $$
+			BEGIN
+				BEGIN
+					ALTER TABLE urls ADD COLUMN mp4url TEXT;
+				EXCEPTION
+					WHEN duplicate_column THEN RAISE NOTICE 'column mp4url already exists in urls.';
 				END;
 			END;
 		$$

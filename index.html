@@ -30,10 +30,12 @@
                 class="gif"
                 data-width="{{.Width}}"
                 data-height="{{.Height}}"
-                src="{{.WebMURL}}"
                 preload="metadata"
                 loop
-              ></video>
+              >
+              <source src="{{.WebMURL}}" type="video/webm">
+              <source src="{{.MP4URL}}" type="video/mp4">
+            </video>
               <div>
                 {{.Title}}
                 <br>
