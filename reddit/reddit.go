@@ -19,10 +19,9 @@ func subReddits() []subReddit {
 	sfw := []string{
 		"gifs", "perfectloops", "creepy_gif", "noisygifs", "analogygifs",
 		"reversegif", "funny_gifs", "funnygifs", "aww_gifs", "wheredidthesodago",
-		"adventuretimegifs", "animegifs", "communitygifs", "Movie_GIFs", "tvgifs", "gaming_gifs",
-		"AnimalsBeingJerks", "AnimalGIFs", "birdreactiongifs", "CatGifs", "catreactiongifs", "slothgifs",
+		"AnimalsBeingJerks", "AnimalGIFs", "birdreactiongifs", "CatGifs", "catreactiongifs",
 		"Puggifs", "KimJongUnGifs", "SpaceGifs", "physicsgifs", "educationalgifs",
-		"chemicalreactiongifs", "mechanical_gifs", "cargifs", "wobblegifs", "SurrealGifs",
+		"chemicalreactiongifs", "mechanical_gifs",
 	}
 	nsfw := []string{
 		"gifsgonewild", "porn_gifs", "PornGifs", "NSFW_SEXY_GIF", "nsfwcelebgifs",
