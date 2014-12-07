@@ -65,13 +65,13 @@ type RedditURL struct {
 	Permalink string
 }
 
-func redditURLs(subReddit subReddit, pages int) ([]RedditURL, error) {
+func redditURLs(subReddit subReddit) ([]RedditURL, error) {
 	after := ""
 	var urls []RedditURL
 
-	for page := 0; page < pages; page++ {
-		log.Printf("Downloading top urls from /r/%v, page %d, after %v\n", subReddit.Name, page+1, after)
-		url := fmt.Sprintf("https://api.reddit.com/r/%v/top.json", subReddit.Name)
+	for {
+		log.Printf("Downloading hot urls from /r/%v, after %v\n", subReddit.Name, after)
+		url := fmt.Sprintf("https://api.reddit.com/r/%v/hot.json", subReddit.Name)
 		if after != "" {
 			url += "?after=" + after
 		}
@@ -124,7 +124,7 @@ func GetRedditURLs() []RedditURL {
 
 	for _, sr := range subReddits() {
 		log.Printf("Downloading /r/%v\n", sr.Name)
-		urls, err := redditURLs(sr, 10)
+		urls, err := redditURLs(sr)
 		if err != nil {
 			log.Println(err)
 			continue
