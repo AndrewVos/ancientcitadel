@@ -4,38 +4,64 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strings"
-	"time"
 )
 
-type subReddit struct {
-	Work string
-	Name string
+type SubReddit struct {
+	Name           string
+	after          string
+	finishedPaging bool
 }
 
-func subReddits() []subReddit {
-	sfw := []string{
-		"gifs", "perfectloops", "creepy_gif", "noisygifs", "analogygifs",
-		"reversegif", "funny_gifs", "funnygifs", "aww_gifs", "wheredidthesodago",
-		"AnimalsBeingJerks", "AnimalGIFs", "birdreactiongifs", "CatGifs", "catreactiongifs",
-		"Puggifs", "KimJongUnGifs", "SpaceGifs", "physicsgifs", "educationalgifs",
-		"chemicalreactiongifs", "mechanical_gifs",
+func (sr *SubReddit) NextPage() ([]RedditURL, error) {
+	if sr.finishedPaging {
+		return nil, nil
 	}
-	nsfw := []string{
-		"gifsgonewild", "porn_gifs", "PornGifs", "NSFW_SEXY_GIF", "nsfwcelebgifs",
-		"adultgifs", "NSFW_GIF", "nsfw_gifs", "porngif", "cutegirlgifs", "Hot_Women_Gifs",
-		"randomsexygifs", "TittyDrop", "boobbounce", "boobgifs", "celebgifs",
+
+	url := fmt.Sprintf("https://api.reddit.com/r/%v/hot.json", sr.Name)
+	if sr.after != "" {
+		url += "?after=" + sr.after
 	}
-	var subReddits []subReddit
-	for _, s := range sfw {
-		subReddits = append(subReddits, subReddit{Work: "sfw", Name: s})
+
+	response, err := http.Get(url)
+	if err != nil {
+		return nil, err
 	}
-	for _, s := range nsfw {
-		subReddits = append(subReddits, subReddit{Work: "nsfw", Name: s})
+	b, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
 	}
-	return subReddits
+	var redditResponse redditResponse
+	err = json.Unmarshal(b, &redditResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	var urls []RedditURL
+	for _, child := range redditResponse.Data.Children {
+		url := child.Data.URL
+		if strings.Contains(url, "imgur.com") && !strings.HasSuffix(url, ".gif") {
+			url = url + ".gif"
+		}
+		if strings.Contains(url, "gfycat.com") && !strings.HasSuffix(url, ".gif") {
+			url = strings.Replace(url, "http://gfycat", "http://giant.gfycat", -1)
+			url += ".gif"
+		}
+
+		urls = append(urls, RedditURL{
+			Title:     child.Data.Title,
+			URL:       url,
+			Permalink: child.Data.Permalink,
+			Created:   child.Data.Created,
+		})
+	}
+	sr.after = redditResponse.Data.After
+	if sr.after == "" {
+		sr.finishedPaging = true
+	}
+
+	return urls, nil
 }
 
 type redditResponse struct {
@@ -55,96 +81,12 @@ type redditResponseChildData struct {
 	Permalink string
 	Title     string
 	URL       string
+	Created   float64
 }
 
 type RedditURL struct {
-	Work      string
-	subReddit string
 	Title     string
 	URL       string
 	Permalink string
-}
-
-func redditURLs(subReddit subReddit) ([]RedditURL, error) {
-	after := ""
-	var urls []RedditURL
-
-	for {
-		log.Printf("Downloading hot urls from /r/%v, after %v\n", subReddit.Name, after)
-		url := fmt.Sprintf("https://api.reddit.com/r/%v/hot.json", subReddit.Name)
-		if after != "" {
-			url += "?after=" + after
-		}
-
-		response, err := http.Get(url)
-		if err != nil {
-			return []RedditURL{}, err
-		}
-		b, err := ioutil.ReadAll(response.Body)
-		if err != nil {
-			return []RedditURL{}, err
-		}
-		var redditResponse redditResponse
-		err = json.Unmarshal(b, &redditResponse)
-		if err != nil {
-			return urls, err
-		}
-		for _, child := range redditResponse.Data.Children {
-			url := child.Data.URL
-			if strings.Contains(url, "imgur.com") && !strings.HasSuffix(url, ".gif") {
-				url = url + ".gif"
-			}
-			if strings.Contains(url, "gfycat.com") && !strings.HasSuffix(url, ".gif") {
-				url = strings.Replace(url, "http://gfycat", "http://giant.gfycat", -1)
-				url += ".gif"
-			}
-
-			urls = append(urls, RedditURL{
-				Work:      subReddit.Work,
-				subReddit: subReddit.Name,
-				Title:     child.Data.Title,
-				URL:       url,
-				Permalink: child.Data.Permalink,
-			})
-		}
-		after = redditResponse.Data.After
-		if after == "" {
-			log.Println("Apparently there is no next page...")
-			break
-		}
-
-		log.Println("Sleeping for 2 seconds...")
-		time.Sleep(2 * time.Second)
-	}
-	return urls, nil
-}
-
-func GetRedditURLs() []RedditURL {
-	var groupedRedditURLs [][]RedditURL
-
-	for _, sr := range subReddits() {
-		log.Printf("Downloading /r/%v\n", sr.Name)
-		urls, err := redditURLs(sr)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		groupedRedditURLs = append(groupedRedditURLs, urls)
-	}
-
-	longestSetOfURLs := 0
-	for _, urls := range groupedRedditURLs {
-		if len(urls) > longestSetOfURLs {
-			longestSetOfURLs = len(urls)
-		}
-	}
-	var redditURLs []RedditURL
-	for i := 0; i < longestSetOfURLs; i++ {
-		for _, urls := range groupedRedditURLs {
-			if i < len(urls) {
-				redditURLs = append(redditURLs, urls[i])
-			}
-		}
-	}
-	return redditURLs
+	Created   float64
 }
