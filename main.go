@@ -80,87 +80,85 @@ func serveAsset(r *mux.Router, assetPath string) {
 	})
 }
 
-func sfwSubreddits() []string {
-	return []string{
+func updateSubReddit(work string, name string) error {
+	log.Printf("Downloading %q %q...\n", work, name)
+	subReddit := reddit.SubReddit{Name: name}
+
+	for {
+		redditURLs, err := subReddit.NextPage()
+		if err != nil {
+			return err
+		}
+		if len(redditURLs) == 0 {
+			return nil
+		}
+		for _, redditURL := range redditURLs {
+			sourceURL := "https://reddit.com" + redditURL.Permalink
+
+			exists, err := existsInDB(sourceURL)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			if exists {
+				log.Printf("%v already stored\n", sourceURL)
+				continue
+			}
+
+			information, err := gfycat.Gif(redditURL.URL)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+
+			url := URL{
+				Work:      work,
+				Title:     redditURL.Title,
+				SourceURL: sourceURL,
+				URL:       redditURL.URL,
+				WebMURL:   information.WebMURL,
+				MP4URL:    information.MP4URL,
+				Width:     information.Width,
+				Height:    information.Height,
+				CreatedAt: time.Unix(int64(redditURL.Created), 0),
+			}
+			err = saveURL(url)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+		time.Sleep(2 * time.Second)
+	}
+}
+
+func updateRedditForever() {
+	sfw := []string{
 		"gifs", "perfectloops", "creepy_gif", "noisygifs", "analogygifs",
 		"reversegif", "funny_gifs", "funnygifs", "aww_gifs", "wheredidthesodago",
 		"AnimalsBeingJerks", "AnimalGIFs", "birdreactiongifs", "CatGifs", "catreactiongifs",
 		"Puggifs", "KimJongUnGifs", "SpaceGifs", "physicsgifs", "educationalgifs",
 		"chemicalreactiongifs", "mechanical_gifs",
 	}
-}
-func nsfwSubreddits() []string {
-	return []string{
+	nsfw := []string{
 		"gifsgonewild", "porn_gifs", "PornGifs", "NSFW_SEXY_GIF", "nsfwcelebgifs",
 		"adultgifs", "NSFW_GIF", "nsfw_gifs", "porngif", "cutegirlgifs", "Hot_Women_Gifs",
 		"randomsexygifs", "TittyDrop", "boobbounce", "boobgifs", "celebgifs",
 	}
-}
-
-func updateRedditForever() {
-	updateReddit := func() {
-		allReddits := map[string][]reddit.SubReddit{}
-		for _, s := range sfwSubreddits() {
-			allReddits["sfw"] = append(allReddits["sfw"], reddit.SubReddit{Name: s})
-		}
-		for _, s := range nsfwSubreddits() {
-			allReddits["nsfw"] = append(allReddits["nsfw"], reddit.SubReddit{Name: s})
-		}
-
-		for work, subReddits := range allReddits {
-			for _, subReddit := range subReddits {
-				log.Printf("Download %q %q...\n", work, subReddit.Name)
-				redditURLs, err := subReddit.NextPage()
-				if err != nil {
-					log.Println(err)
-					continue
-				}
-				if len(redditURLs) == 0 {
-					continue
-				}
-				for _, redditURL := range redditURLs {
-					sourceURL := "https://reddit.com" + redditURL.Permalink
-
-					exists, err := existsInDB(sourceURL)
-					if err != nil {
-						log.Println(err)
-						continue
-					}
-					if exists {
-						log.Printf("%v already stored\n", sourceURL)
-						continue
-					}
-
-					information, err := gfycat.Gif(redditURL.URL)
-					if err != nil {
-						log.Println(err)
-						continue
-					}
-
-					url := URL{
-						Work:      work,
-						Title:     redditURL.Title,
-						SourceURL: sourceURL,
-						URL:       redditURL.URL,
-						WebMURL:   information.WebMURL,
-						MP4URL:    information.MP4URL,
-						Width:     information.Width,
-						Height:    information.Height,
-						CreatedAt: time.Unix(int64(redditURL.Created), 0),
-					}
-					err = saveURL(url)
-					if err != nil {
-						log.Println(err)
-					}
-				}
-				time.Sleep(2 * time.Second)
-			}
-		}
-	}
 
 	go func() {
 		for {
-			updateReddit()
+			for _, s := range sfw {
+				err := updateSubReddit("sfw", s)
+				if err != nil {
+					log.Println(err)
+				}
+			}
+			for _, s := range nsfw {
+				err := updateSubReddit("nsfw", s)
+				if err != nil {
+					log.Println(err)
+				}
+			}
 		}
 	}()
 }
