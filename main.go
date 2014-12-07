@@ -112,13 +112,10 @@ func updateRedditForever() {
 	}
 
 	go func() {
-		updateReddit()
-		ticker := time.NewTicker(600 * time.Second)
-		go func() {
-			for _ = range ticker.C {
-				updateReddit()
-			}
-		}()
+		for {
+			updateReddit()
+			time.Sleep(10 * time.Minute)
+		}
 	}()
 }
 
