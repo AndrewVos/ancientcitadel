@@ -22,28 +22,35 @@
       <p>
       <a href="/sfw/1">safe for work</a> / <a href="/nsfw/1">not safe for work</a>
       </p>
-      <div class="items">
-        {{range .URLs}}
-          <div class="item">
-            <video
-              class="gif"
-              data-width="{{.Width}}"
-              data-height="{{.Height}}"
-              src="{{.WebMURL}}"
-              preload="metadata"
-              loop
-            ></video>
-            <div>
-              {{.Title}}
-              <br>
-              <a href="{{.URL}}">link</a> / <a href="{{.SourceURL}}">comments</a>
+      {{ if .URLs }}
+        <div class="items">
+          {{range .URLs}}
+            <div class="item">
+              <video
+                class="gif"
+                data-width="{{.Width}}"
+                data-height="{{.Height}}"
+                src="{{.WebMURL}}"
+                preload="metadata"
+                loop
+              ></video>
+              <div>
+                {{.Title}}
+                <br>
+                <a href="{{.URL}}">link</a> / <a href="{{.SourceURL}}">comments</a>
+              </div>
             </div>
-          </div>
-        {{end}}
-      </div>
-      <div class="next-page">
-        <a href="{{.NextPagePath}}">BRING FORTH MORE GIFS</a>
-      </div>
+          {{end}}
+        </div>
+        <div class="next-page">
+          <a href="{{.NextPagePath}}">BRING FORTH MORE GIFS</a>
+        </div>
+      {{ else }}
+      <p>
+        Looks like you've reached the end of the line! Well done! Maybe it's time to get out
+        there and live your life?
+      </p>
+      {{ end }}
     </div>
     <script src="/assets/scripts/instantclick.min.js" data-no-instant></script>
     <script data-no-instant>
