@@ -23,6 +23,9 @@
       <a href="/sfw/1">safe for work</a> / <a href="/nsfw/1">not safe for work</a>
       </p>
       {{ if .URLs }}
+        <div class="total-count">
+          {{.TotalURLs}} gifs found!
+        </div>
         <div class="items">
           {{range .URLs}}
             <div class="item">

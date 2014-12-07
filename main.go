@@ -23,6 +23,7 @@ type Page struct {
 	URLs         []URL
 	CurrentPage  int
 	NextPagePath string
+	TotalURLs    int
 }
 
 type URL struct {
@@ -48,7 +49,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	if mux.Vars(r)["work"] == "nsfw" {
 		work = "nsfw"
 	}
-	page := Page{CurrentPage: 1}
+
+	totalURLs, err := getURLCount()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
+	page := Page{CurrentPage: 1, TotalURLs: totalURLs}
 	if p := mux.Vars(r)["page"]; p != "" {
 		page.CurrentPage, _ = strconv.Atoi(p)
 	}
@@ -203,6 +211,20 @@ func existsInDB(sourceURL string) (bool, error) {
 		return false, err
 	}
 	return count != 0, nil
+}
+
+func getURLCount() (int, error) {
+	db, err := db()
+	if err != nil {
+		return 0, err
+	}
+	var count int
+	err = db.Get(&count, "SELECT count(*) FROM urls;")
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+
 }
 
 func saveURL(url URL) error {
