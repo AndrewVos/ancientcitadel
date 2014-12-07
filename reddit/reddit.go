@@ -89,8 +89,6 @@ func redditURLs(subReddit subReddit, pages int) ([]RedditURL, error) {
 		if err != nil {
 			return urls, err
 		}
-		after = redditResponse.Data.After
-
 		for _, child := range redditResponse.Data.Children {
 			url := child.Data.URL
 			if strings.Contains(url, "imgur.com") && !strings.HasSuffix(url, ".gif") {
@@ -109,6 +107,12 @@ func redditURLs(subReddit subReddit, pages int) ([]RedditURL, error) {
 				Permalink: child.Data.Permalink,
 			})
 		}
+		after = redditResponse.Data.After
+		if after == "" {
+			log.Println("Apparently there is no next page...")
+			break
+		}
+
 		log.Println("Sleeping for 2 seconds...")
 		time.Sleep(2 * time.Second)
 	}
