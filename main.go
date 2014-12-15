@@ -104,7 +104,7 @@ func updateSubReddit(work string, name string) error {
 		for _, redditURL := range redditURLs {
 			sourceURL := "https://reddit.com" + redditURL.Permalink
 
-			exists, err := existsInDB(sourceURL)
+			exists, err := existsInDB(redditURL.URL, sourceURL)
 			if err != nil {
 				log.Println(err)
 				continue
@@ -200,14 +200,14 @@ func getURLs(work string, page int, pageSize int) ([]URL, error) {
 	return urls, nil
 }
 
-func existsInDB(sourceURL string) (bool, error) {
+func existsInDB(url string, sourceURL string) (bool, error) {
 	db, err := db()
 	if err != nil {
 		return false, err
 	}
 
 	var count int
-	err = db.Get(&count, "SELECT count(*) FROM urls WHERE source_url= $1;", sourceURL)
+	err = db.Get(&count, "SELECT count(*) FROM urls WHERE url = $1 OR source_url = $2;", url, sourceURL)
 	if err != nil {
 		return false, err
 	}
