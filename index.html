@@ -25,26 +25,16 @@
     <div class="wrapper">
       <h1>ANCIENT CITADEL</h1>
       <h2>brace thineself</h2>
-      <p>
-      <a href="/sfw/1">safe for work</a> / <a href="/nsfw/1">not safe for work</a>
-      </p>
+      <p> <a href="/sfw/1">safe for work</a> / <a href="/nsfw/1">not safe for work</a> </p>
       {{ if .URLs }}
-        <div class="total-count">
-          {{.TotalURLs}} gifs found!
-        </div>
+        <div class="total-count">{{.TotalURLs}} gifs found!</div>
         <div class="items">
           {{range .URLs}}
             <div class="item">
-              <video
-                class="gif"
-                data-width="{{.Width}}"
-                data-height="{{.Height}}"
-                preload="metadata"
-                loop
-              >
-              <source src="{{.WebMURL}}" type="video/webm">
-              <source src="{{.MP4URL}}" type="video/mp4">
-            </video>
+              <video class="gif" data-width="{{.Width}}" data-height="{{.Height}}" preload="metadata" loop>
+                <source src="{{.WebMURL}}" type="video/webm">
+                <source src="{{.MP4URL}}" type="video/mp4">
+              </video>
               <div>
                 {{.Title}}
                 <br>
