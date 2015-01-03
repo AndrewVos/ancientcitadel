@@ -276,7 +276,7 @@ func main() {
 
 	http.Handle("/", r)
 	fmt.Printf("Starting on port %v\n", *port)
-	err := http.ListenAndServe(":"+*port, nil)
+	err := http.ListenAndServe("0.0.0.0:"+*port, nil)
 	log.Fatal(err)
 }
 
