@@ -269,7 +269,6 @@ func main() {
 	serveAsset(r, "/assets/styles/main.css")
 	serveAsset(r, "/assets/styles/items.css")
 	serveAsset(r, "/assets/scripts/gifs.js")
-	serveAsset(r, "/assets/scripts/instantclick.min.js")
 	serveAsset(r, "/assets/scripts/packery.pkgd.min.js")
 	serveAsset(r, "/assets/images/loading.gif")
 	r.Handle("/", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(handler)))
