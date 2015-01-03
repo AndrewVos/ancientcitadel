@@ -1,5 +1,19 @@
 body {
-  font: 1em/1.67 'Open Sans', Arial, Sans-serif;
-  margin: 0;
+  font: 1em 'Open Sans', Arial, Sans-serif;
+  color: #333;
   background-color: #eee;
+  margin: 0;
+}
+
+.next-page {
+  text-align: center;
+  margin:0;
+  padding:0;
+  padding-top: 2em;
+  padding-bottom: 6em;
+}
+
+.next-page a {
+  font-size: 2em;
+  color: inherit;
 }
