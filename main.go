@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/AndrewVos/ancientcitadel/gfycat"
@@ -82,6 +83,35 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		log.Print(err)
 		return
 	}
+}
+
+func apiRandomHandler(w http.ResponseWriter, r *http.Request) {
+	work := "sfw"
+	if mux.Vars(r)["work"] == "nsfw" {
+		work = "nsfw"
+	}
+
+	db, err := db()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Print(err)
+		return
+	}
+	var url URL
+	err = db.Get(&url, "SELECT * FROM urls WHERE work=$1 ORDER BY random() LIMIT 1", work)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Print(err)
+		return
+	}
+
+	b, err := json.MarshalIndent(url, " ", "")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Print(err)
+		return
+	}
+	w.Write(b)
 }
 
 func serveAsset(r *mux.Router, assetPath string) {
@@ -277,6 +307,7 @@ func main() {
 	serveAsset(r, "/assets/scripts/packery.pkgd.min.js")
 	serveAsset(r, "/assets/images/loading.gif")
 	r.Handle("/", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(handler)))
+	r.Handle("/api/random/{work}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(apiRandomHandler)))
 	r.Handle("/{work}/{page}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(handler)))
 
 	http.Handle("/", r)
