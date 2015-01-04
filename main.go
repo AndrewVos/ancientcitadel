@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/AndrewVos/ancientcitadel/gfycat"
 	"github.com/AndrewVos/ancientcitadel/reddit"
+	"github.com/AndrewVos/mig"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
@@ -27,15 +28,16 @@ type Page struct {
 }
 
 type URL struct {
-	CreatedAt time.Time `db:"created_at"`
-	Work      string    `db:"work"`
-	Title     string    `db:"title"`
-	SourceURL string    `db:"source_url"`
-	URL       string    `db:"url"`
-	WebMURL   string    `db:"webmurl"`
-	MP4URL    string    `db:"mp4url"`
-	Width     int       `db:"width"`
-	Height    int       `db:"height"`
+	CreatedAt time.Time   `db:"created_at"`
+	Work      string      `db:"work"`
+	Title     string      `db:"title"`
+	SourceURL string      `db:"source_url"`
+	URL       string      `db:"url"`
+	WebMURL   string      `db:"webmurl"`
+	MP4URL    string      `db:"mp4url"`
+	Width     int         `db:"width"`
+	Height    int         `db:"height"`
+	TSV       interface{} `db:"tsv"`
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -258,7 +260,10 @@ func saveURL(url URL) error {
 
 func main() {
 	runtime.GOMAXPROCS(4)
-	migrate()
+	err := mig.Migrate("postgres", databaseURL(), "./migrations")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	updateRedditForever()
 
@@ -276,62 +281,26 @@ func main() {
 
 	http.Handle("/", r)
 	fmt.Printf("Starting on port %v\n", *port)
-	err := http.ListenAndServe("0.0.0.0:"+*port, nil)
+	err = http.ListenAndServe("0.0.0.0:"+*port, nil)
 	log.Fatal(err)
 }
 
 var database *sqlx.DB
 
+func databaseURL() string {
+	if databaseURL := os.Getenv("DATABASE_URL"); databaseURL != "" {
+		return databaseURL
+	} else {
+		return "host=/var/run/postgresql dbname=ancientcitadel sslmode=disable"
+	}
+}
+
 func db() (*sqlx.DB, error) {
 	if database == nil {
-		if databaseURL := os.Getenv("DATABASE_URL"); databaseURL != "" {
-			db, err := sqlx.Connect("postgres", databaseURL)
-			database = db
-			return db, err
-		}
-		db, err := sqlx.Connect("postgres", "host=/var/run/postgresql dbname=ancientcitadel sslmode=disable")
+		db, err := sqlx.Connect("postgres", databaseURL())
 		database = db
 		return database, err
 	} else {
 		return database, database.Ping()
 	}
-}
-
-func migrate() {
-	db, err := db()
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	schema := `
-		CREATE TABLE IF NOT EXISTS urls(
-			created_at TIMESTAMP,
-			work    TEXT,
-			title   TEXT,
-			url     TEXT,
-			webmurl TEXT,
-			width   INTEGER,
-			height  INTEGER
-		);
-		DO $$
-			BEGIN
-				BEGIN
-					ALTER TABLE urls ADD COLUMN source_url TEXT;
-				EXCEPTION
-					WHEN duplicate_column THEN RAISE NOTICE 'column source_url already exists in urls.';
-				END;
-			END;
-		$$;
-
-		DO $$
-			BEGIN
-				BEGIN
-					ALTER TABLE urls ADD COLUMN mp4url TEXT;
-				EXCEPTION
-					WHEN duplicate_column THEN RAISE NOTICE 'column mp4url already exists in urls.';
-				END;
-			END;
-		$$
-	`
-	db.MustExec(schema)
 }
