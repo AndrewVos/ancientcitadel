@@ -13,7 +13,7 @@
       topArea.appendChild(title);
 
       var link = document.createElement("a");
-      link.setAttribute("href", randomGif.SourceURL);
+      link.setAttribute("href", randomGif.URL);
       link.appendChild(document.createTextNode("link"));
       topArea.appendChild(link);
 
