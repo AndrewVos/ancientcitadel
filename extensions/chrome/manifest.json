@@ -1,0 +1,13 @@
+{
+  "manifest_version": 2,
+
+  "name": "AncientCitadel",
+  "description": "Show a random gif on your new tab page.",
+  "version": "0.1",
+  "permissions": [
+    "http://ancientcitadel.com/"
+  ],
+  "chrome_url_overrides" : {
+	  "newtab": "new-tab.html"
+  }
+}
