@@ -171,7 +171,7 @@ func updateSubReddit(name string) error {
 func updateRedditForever() {
 	reddits := []string{
 		// sfw
-		"gifs", "perfectloops", "creepy_gif", "noisygifs", "analogygifs",
+		"gifs", "perfectloops", "noisygifs", "analogygifs",
 		"reversegif", "funny_gifs", "funnygifs", "aww_gifs", "wheredidthesodago",
 		"AnimalsBeingJerks", "AnimalGIFs", "birdreactiongifs", "CatGifs", "catreactiongifs",
 		"Puggifs", "KimJongUnGifs", "SpaceGifs", "physicsgifs", "educationalgifs",
