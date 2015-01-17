@@ -180,7 +180,7 @@ func updateRedditForever() {
 		"reversegif", "funny_gifs", "funnygifs", "aww_gifs", "wheredidthesodago",
 		"AnimalsBeingJerks", "AnimalGIFs", "birdreactiongifs", "CatGifs", "catreactiongifs",
 		"Puggifs", "KimJongUnGifs", "SpaceGifs", "physicsgifs", "educationalgifs",
-		"chemicalreactiongifs", "mechanical_gifs",
+		"chemicalreactiongifs", "mechanical_gifs", "shockwaveporn",
 		// nsfw
 		"gifsgonewild", "porn_gifs", "PornGifs", "NSFW_SEXY_GIF", "nsfwcelebgifs",
 		"adultgifs", "NSFW_GIF", "nsfw_gifs", "porngif", "cutegirlgifs", "Hot_Women_Gifs",
