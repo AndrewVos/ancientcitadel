@@ -54,6 +54,7 @@ func (sr *SubReddit) NextPage() ([]RedditURL, error) {
 			URL:       url,
 			Permalink: child.Data.Permalink,
 			Created:   child.Data.Created,
+			Over18:    child.Data.Over18,
 		})
 	}
 	sr.after = redditResponse.Data.After
@@ -82,6 +83,7 @@ type redditResponseChildData struct {
 	Title     string
 	URL       string
 	Created   float64
+	Over18    bool `json:"over_18"`
 }
 
 type RedditURL struct {
@@ -89,4 +91,5 @@ type RedditURL struct {
 	URL       string
 	Permalink string
 	Created   float64
+	Over18    bool
 }

@@ -4,14 +4,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/AndrewVos/ancientcitadel/gfycat"
-	"github.com/AndrewVos/ancientcitadel/reddit"
-	"github.com/AndrewVos/mig"
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
-	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"path"
@@ -19,6 +13,14 @@ import (
 	"strconv"
 	"text/template"
 	"time"
+
+	"github.com/AndrewVos/ancientcitadel/gfycat"
+	"github.com/AndrewVos/ancientcitadel/reddit"
+	"github.com/AndrewVos/mig"
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 )
 
 type Page struct {
@@ -30,7 +32,6 @@ type Page struct {
 
 type URL struct {
 	CreatedAt time.Time   `db:"created_at"`
-	Work      string      `db:"work"`
 	Title     string      `db:"title"`
 	SourceURL string      `db:"source_url"`
 	URL       string      `db:"url"`
@@ -38,6 +39,7 @@ type URL struct {
 	MP4URL    string      `db:"mp4url"`
 	Width     int         `db:"width"`
 	Height    int         `db:"height"`
+	NSFW      bool        `db:"nsfw"`
 	TSV       interface{} `db:"tsv"`
 }
 
@@ -48,12 +50,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		log.Print(err)
 		return
 	}
-	work := "sfw"
-	if mux.Vars(r)["work"] == "nsfw" {
-		work = "nsfw"
-	}
+	nsfw := mux.Vars(r)["work"] == "nsfw"
 
-	totalURLs, err := getURLCount()
+	totalURLs, err := getURLCount(nsfw)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Println(err)
@@ -64,13 +63,13 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		page.CurrentPage, _ = strconv.Atoi(p)
 	}
 
-	page.URLs, err = getURLs(work, page.CurrentPage, 20)
+	page.URLs, err = getURLs(nsfw, page.CurrentPage, 20)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Print(err)
 		return
 	}
-	page.NextPagePath = fmt.Sprintf("/%v/%d", work, page.CurrentPage+1)
+	page.NextPagePath = fmt.Sprintf("/%v/%d", nsfw, page.CurrentPage+1)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -86,10 +85,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func apiRandomHandler(w http.ResponseWriter, r *http.Request) {
-	work := "sfw"
-	if mux.Vars(r)["work"] == "nsfw" {
-		work = "nsfw"
-	}
+	nsfw := mux.Vars(r)["work"] == "nsfw"
 
 	db, err := db()
 	if err != nil {
@@ -98,7 +94,7 @@ func apiRandomHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var url URL
-	err = db.Get(&url, "SELECT * FROM urls WHERE work=$1 ORDER BY random() LIMIT 1", work)
+	err = db.Get(&url, "SELECT * FROM urls WHERE nsfw=$1 ORDER BY random() LIMIT 1", nsfw)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Print(err)
@@ -120,8 +116,8 @@ func serveAsset(r *mux.Router, assetPath string) {
 	})
 }
 
-func updateSubReddit(work string, name string) error {
-	log.Printf("Downloading %q %q...\n", work, name)
+func updateSubReddit(name string) error {
+	log.Printf("Downloading %q...\n", name)
 	subReddit := reddit.SubReddit{Name: name}
 
 	for {
@@ -153,7 +149,7 @@ func updateSubReddit(work string, name string) error {
 			}
 
 			url := URL{
-				Work:      work,
+				NSFW:      redditURL.Over18,
 				Title:     redditURL.Title,
 				SourceURL: sourceURL,
 				URL:       redditURL.URL,
@@ -173,29 +169,27 @@ func updateSubReddit(work string, name string) error {
 }
 
 func updateRedditForever() {
-	sfw := []string{
+	reddits := []string{
+		// sfw
 		"gifs", "perfectloops", "creepy_gif", "noisygifs", "analogygifs",
 		"reversegif", "funny_gifs", "funnygifs", "aww_gifs", "wheredidthesodago",
 		"AnimalsBeingJerks", "AnimalGIFs", "birdreactiongifs", "CatGifs", "catreactiongifs",
 		"Puggifs", "KimJongUnGifs", "SpaceGifs", "physicsgifs", "educationalgifs",
 		"chemicalreactiongifs", "mechanical_gifs",
-	}
-	nsfw := []string{
+		// nsfw
 		"gifsgonewild", "porn_gifs", "PornGifs", "NSFW_SEXY_GIF", "nsfwcelebgifs",
 		"adultgifs", "NSFW_GIF", "nsfw_gifs", "porngif", "cutegirlgifs", "Hot_Women_Gifs",
 		"randomsexygifs", "TittyDrop", "boobbounce", "boobgifs", "celebgifs",
 	}
+	for i := range reddits {
+		j := rand.Intn(i + 1)
+		reddits[i], reddits[j] = reddits[j], reddits[i]
+	}
 
 	go func() {
 		for {
-			for _, s := range sfw {
-				err := updateSubReddit("sfw", s)
-				if err != nil {
-					log.Println(err)
-				}
-			}
-			for _, s := range nsfw {
-				err := updateSubReddit("nsfw", s)
+			for _, s := range reddits {
+				err := updateSubReddit(s)
 				if err != nil {
 					log.Println(err)
 				}
@@ -204,7 +198,7 @@ func updateRedditForever() {
 	}()
 }
 
-func getURLs(work string, page int, pageSize int) ([]URL, error) {
+func getURLs(nsfw bool, page int, pageSize int) ([]URL, error) {
 	db, err := db()
 	if err != nil {
 		return nil, err
@@ -212,11 +206,11 @@ func getURLs(work string, page int, pageSize int) ([]URL, error) {
 
 	rows, err := db.Queryx(`
 	SELECT * FROM urls
-		WHERE work = $1
+		WHERE nsfw = $1
 		ORDER BY created_at DESC
 		LIMIT $2
 		OFFSET $3`,
-		work, pageSize, page*pageSize)
+		nsfw, pageSize, page*pageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -246,13 +240,13 @@ func existsInDB(url string, sourceURL string) (bool, error) {
 	return count != 0, nil
 }
 
-func getURLCount() (int, error) {
+func getURLCount(nsfw bool) (int, error) {
 	db, err := db()
 	if err != nil {
 		return 0, err
 	}
 	var count int
-	err = db.Get(&count, "SELECT count(*) FROM urls;")
+	err = db.Get(&count, "SELECT count(*) FROM urls WHERE nsfw=$1;", nsfw)
 	if err != nil {
 		return 0, err
 	}
@@ -268,13 +262,13 @@ func saveURL(url URL) error {
 
 	_, err = db.Exec(`
 	INSERT INTO urls (
-		created_at, work, title, url, source_url, webmurl, mp4url, width, height
+		created_at, title, nsfw, url, source_url, webmurl, mp4url, width, height
 	) VALUES (
 		$1, $2, $3, $4, $5, $6, $7, $8, $9
 	)`,
 		url.CreatedAt,
-		url.Work,
 		url.Title,
+		url.NSFW,
 		url.URL,
 		url.SourceURL,
 		url.WebMURL,
