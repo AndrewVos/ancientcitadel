@@ -69,7 +69,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		log.Print(err)
 		return
 	}
-	page.NextPagePath = fmt.Sprintf("/%v/%d", nsfw, page.CurrentPage+1)
+
+	work := "sfw"
+	if nsfw {
+		work = "nsfw"
+	}
+	page.NextPagePath = fmt.Sprintf("/%v/%d", work, page.CurrentPage+1)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
