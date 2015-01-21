@@ -183,8 +183,8 @@ func updateRedditForever() {
 		"chemicalreactiongifs", "mechanical_gifs", "shockwaveporn",
 		// nsfw
 		"gifsgonewild", "porn_gifs", "PornGifs", "NSFW_SEXY_GIF", "nsfwcelebgifs",
-		"adultgifs", "NSFW_GIF", "nsfw_gifs", "porngif", "cutegirlgifs", "Hot_Women_Gifs",
-		"randomsexygifs", "TittyDrop", "boobbounce", "boobgifs", "celebgifs",
+		"adultgifs", "NSFW_GIF", "nsfw_gifs", "porngif", "randomsexygifs", "TittyDrop",
+		"boobbounce", "boobgifs", "celebgifs",
 	}
 	for i := range reddits {
 		j := rand.Intn(i + 1)
