@@ -172,9 +172,14 @@ func updateSubReddit(name string) error {
 				Height:    information.Height,
 				CreatedAt: time.Unix(int64(redditURL.Created), 0),
 			}
-			err = saveURL(url)
-			if err != nil {
-				log.Println(err)
+			oldestAllowed := time.Now().AddDate(-1, 0, 0)
+			if url.CreatedAt.Before(oldestAllowed) {
+				log.Printf("Not saving url with date %v\n", url.CreatedAt)
+			} else {
+				err = saveURL(url)
+				if err != nil {
+					log.Println(err)
+				}
 			}
 		}
 		time.Sleep(2 * time.Second)
@@ -206,6 +211,11 @@ func updateRedditForever() {
 				if err != nil {
 					log.Println(err)
 				}
+			}
+
+			err := dropOlderGifs()
+			if err != nil {
+				log.Println(err)
 			}
 		}
 	}()
@@ -251,6 +261,16 @@ func existsInDB(url string, sourceURL string) (bool, error) {
 		return false, err
 	}
 	return count != 0, nil
+}
+
+func dropOlderGifs() error {
+	db, err := db()
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec("DELETE FROM urls WHERE created_at < now() - interval '1 years'")
+	return err
 }
 
 func getURLCount(nsfw bool) (int, error) {
