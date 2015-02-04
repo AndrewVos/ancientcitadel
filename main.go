@@ -43,6 +43,14 @@ type URL struct {
 	TSV       interface{} `db:"tsv"`
 }
 
+func (u *URL) ToJSON() (string, error) {
+	b, err := json.MarshalIndent(u, " ", "")
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
 func handler(w http.ResponseWriter, r *http.Request) {
 	template, err := template.ParseFiles("index.html")
 	if err != nil {
