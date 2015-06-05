@@ -42,6 +42,7 @@ func (sr *SubReddit) NextPage() ([]RedditURL, error) {
 	for _, child := range redditResponse.Data.Children {
 		url := child.Data.URL
 		if strings.Contains(url, "imgur.com") && !strings.HasSuffix(url, ".gif") {
+			url = strings.TrimSuffix(url, ".gifv")
 			url = url + ".gif"
 		}
 		if strings.Contains(url, "gfycat.com") && !strings.HasSuffix(url, ".gif") {
