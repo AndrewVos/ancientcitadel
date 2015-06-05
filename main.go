@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"runtime"
@@ -24,23 +25,25 @@ import (
 )
 
 type Page struct {
-	URLs         []URL
-	CurrentPage  int
-	NextPagePath string
-	TotalURLs    int
+	URLs        []URL
+	CurrentPage int
+	NextPage    *url.URL
 }
 
 type URL struct {
-	CreatedAt time.Time   `db:"created_at"`
-	Title     string      `db:"title"`
-	SourceURL string      `db:"source_url"`
-	URL       string      `db:"url"`
-	WebMURL   string      `db:"webmurl"`
-	MP4URL    string      `db:"mp4url"`
-	Width     int         `db:"width"`
-	Height    int         `db:"height"`
-	NSFW      bool        `db:"nsfw"`
-	TSV       interface{} `db:"tsv"`
+	CreatedAt time.Time `db:"created_at"`
+	Title     string    `db:"title"`
+	SourceURL string    `db:"source_url"`
+	URL       string    `db:"url"`
+	WebMURL   string    `db:"webmurl"`
+	MP4URL    string    `db:"mp4url"`
+	Width     int       `db:"width"`
+	Height    int       `db:"height"`
+	NSFW      bool      `db:"nsfw"`
+
+	// never used, just here to appease sqlx
+	TSV   string `db:"tsv"`
+	Query string `db:"query"`
 }
 
 func (u *URL) ToJSON() (string, error) {
@@ -60,18 +63,13 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 	nsfw := mux.Vars(r)["work"] == "nsfw"
 
-	totalURLs, err := getURLCount(nsfw)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Println(err)
-		return
-	}
-	page := Page{CurrentPage: 1, TotalURLs: totalURLs}
-	if p := mux.Vars(r)["page"]; p != "" {
+	page := Page{CurrentPage: 1}
+	if p := r.URL.Query().Get("page"); p != "" {
 		page.CurrentPage, _ = strconv.Atoi(p)
 	}
 
-	page.URLs, err = getURLs(nsfw, page.CurrentPage, 20)
+	query := r.URL.Query().Get("q")
+	page.URLs, err = getURLs(query, nsfw, page.CurrentPage, 20)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Print(err)
@@ -82,7 +80,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	if nsfw {
 		work = "nsfw"
 	}
-	page.NextPagePath = fmt.Sprintf("/%v/%d", work, page.CurrentPage+1)
+
+	page.NextPage, _ = url.Parse(fmt.Sprintf("/%v", work))
+	q := page.NextPage.Query()
+	if query != "" {
+		q.Set("q", query)
+	}
+	q.Set("page", fmt.Sprintf("%v", page.CurrentPage+1))
+	page.NextPage.RawQuery = q.Encode()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -221,19 +226,31 @@ func updateRedditForever() {
 	}()
 }
 
-func getURLs(nsfw bool, page int, pageSize int) ([]URL, error) {
+func getURLs(query string, nsfw bool, page int, pageSize int) ([]URL, error) {
 	db, err := db()
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := db.Queryx(`
+	var rows *sqlx.Rows
+	if query == "" {
+		rows, err = db.Queryx(`
 	SELECT * FROM urls
 		WHERE nsfw = $1
 		ORDER BY created_at DESC
-		LIMIT $2
-		OFFSET $3`,
-		nsfw, pageSize, page*pageSize)
+		LIMIT $2 OFFSET $3`,
+			nsfw, pageSize, (page-1)*pageSize)
+	} else {
+		rows, err = db.Queryx(`
+	SELECT * FROM urls,
+		to_tsquery('pg_catalog.english', $1) AS query
+		WHERE nsfw=$2
+		AND (tsv @@ query)
+		ORDER BY ts_rank_cd(tsv, query) DESC
+		LIMIT $3 OFFSET $4`,
+			query, nsfw, pageSize, (page-1)*pageSize)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -271,20 +288,6 @@ func dropOlderGifs() error {
 
 	_, err = db.Exec("DELETE FROM urls WHERE created_at < now() - interval '1 years'")
 	return err
-}
-
-func getURLCount(nsfw bool) (int, error) {
-	db, err := db()
-	if err != nil {
-		return 0, err
-	}
-	var count int
-	err = db.Get(&count, "SELECT count(*) FROM urls WHERE nsfw=$1;", nsfw)
-	if err != nil {
-		return 0, err
-	}
-	return count, nil
-
 }
 
 func saveURL(url URL) error {
@@ -335,7 +338,7 @@ func main() {
 	serveAsset(r, "/assets/images/loading.gif")
 	r.Handle("/", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(handler)))
 	r.Handle("/api/random/{work}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(apiRandomHandler)))
-	r.Handle("/{work}/{page}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(handler)))
+	r.Handle("/{work}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(handler)))
 
 	http.Handle("/", r)
 	fmt.Printf("Starting on port %v\n", *port)

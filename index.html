@@ -25,9 +25,12 @@
     <div class="wrapper">
       <h1>ANCIENT CITADEL</h1>
       <h2>brace thineself</h2>
-      <p> <a href="/sfw/1">safe for work</a> / <a href="/nsfw/1">not safe for work</a> </p>
+      <form method="GET">
+        <input type="hidden" name="page" value="1"></input>
+        <input type="text" name="q" placeholder="wanna find something?"></input>
+      </form>
+      <p> <a href="/sfw">safe for work</a> / <a href="/nsfw">not safe for work</a> </p>
       {{ if .URLs }}
-        <div class="total-count">{{.TotalURLs}} gifs found!</div>
         <div class="items">
           {{range .URLs}}
             <div class="item">
@@ -47,7 +50,7 @@
           {{end}}
         </div>
         <div class="next-page">
-          <a href="{{.NextPagePath}}">BRING FORTH MORE GIFS</a>
+          <a href="{{.NextPage}}">BRING FORTH MORE GIFS</a>
         </div>
       {{ else }}
       <p>
