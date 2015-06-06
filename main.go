@@ -10,8 +10,10 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"regexp"
 	"runtime"
 	"strconv"
+	"strings"
 	"text/template"
 	"time"
 
@@ -241,6 +243,10 @@ func getURLs(query string, nsfw bool, page int, pageSize int) ([]URL, error) {
 		LIMIT $2 OFFSET $3`,
 			nsfw, pageSize, (page-1)*pageSize)
 	} else {
+		wordFinder := regexp.MustCompile("\\w+")
+		queryParts := wordFinder.FindAllString(query, -1)
+		tSearchQuery := strings.Join(queryParts, "|")
+
 		rows, err = db.Queryx(`
 	SELECT * FROM urls,
 		to_tsquery('pg_catalog.english', $1) AS query
@@ -248,7 +254,7 @@ func getURLs(query string, nsfw bool, page int, pageSize int) ([]URL, error) {
 		AND (tsv @@ query)
 		ORDER BY ts_rank_cd(tsv, query) DESC
 		LIMIT $3 OFFSET $4`,
-			query, nsfw, pageSize, (page-1)*pageSize)
+			tSearchQuery, nsfw, pageSize, (page-1)*pageSize)
 	}
 
 	if err != nil {
