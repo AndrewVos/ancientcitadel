@@ -34,6 +34,11 @@ func Gif(gifURL string) (GfyCatInformation, error) {
 		return GfyCatInformation{}, errors.New(fmt.Sprintf("couldn't upload gif to gfycat, but got this?\n%v\n", err))
 	}
 	defer uploadResponse.Body.Close()
+
+	if uploadResponse.StatusCode != 200 {
+		return GfyCatInformation{}, errors.New(fmt.Sprintf("gfycat didn't give us a 200, but got this?\n%v\n", err))
+	}
+
 	b, err := ioutil.ReadAll(uploadResponse.Body)
 	if err != nil {
 		return GfyCatInformation{}, errors.New(fmt.Sprintf("Couldn't read body from %v", uploadURL))
