@@ -30,6 +30,7 @@ type Page struct {
 	URLs        []URL
 	CurrentPage int
 	NextPage    *url.URL
+	Query       string
 }
 
 type URL struct {
@@ -70,8 +71,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		page.CurrentPage, _ = strconv.Atoi(p)
 	}
 
-	query := r.URL.Query().Get("q")
-	page.URLs, err = getURLs(query, nsfw, page.CurrentPage, 20)
+	page.Query = r.URL.Query().Get("q")
+
+	page.URLs, err = getURLs(page.Query, nsfw, page.CurrentPage, 20)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Print(err)
@@ -85,8 +87,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	page.NextPage, _ = url.Parse(fmt.Sprintf("/%v", work))
 	q := page.NextPage.Query()
-	if query != "" {
-		q.Set("q", query)
+	if page.Query != "" {
+		q.Set("q", page.Query)
 	}
 	q.Set("page", fmt.Sprintf("%v", page.CurrentPage+1))
 	page.NextPage.RawQuery = q.Encode()
