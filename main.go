@@ -151,6 +151,23 @@ func serveAssets(r *mux.Router) {
 	}
 }
 
+func validGIFURL(url string) bool {
+	if strings.HasSuffix(url, ".jpg") {
+		return false
+	}
+
+	if strings.Contains(url, "imgur.com") {
+		return true
+	}
+	if strings.Contains(url, "gfycat.com") {
+		return true
+	}
+	if strings.HasSuffix(url, ".gif") {
+		return true
+	}
+	return false
+}
+
 func updateSubReddit(name string) error {
 	log.Printf("Downloading %q...\n", name)
 	subReddit := reddit.SubReddit{Name: name}
@@ -165,6 +182,19 @@ func updateSubReddit(name string) error {
 		}
 		log.Printf("Downloaded %d urls from /r/%v\n", len(redditURLs), name)
 		for _, redditURL := range redditURLs {
+			if validGIFURL(redditURL.URL) == false {
+				continue
+			}
+
+			if strings.Contains(redditURL.URL, "imgur.com") && !strings.HasSuffix(redditURL.URL, ".gif") {
+				redditURL.URL = strings.TrimSuffix(redditURL.URL, ".gifv")
+				redditURL.URL = redditURL.URL + ".gif"
+			}
+			if strings.Contains(redditURL.URL, "gfycat.com") && !strings.HasSuffix(redditURL.URL, ".gif") {
+				redditURL.URL = strings.Replace(redditURL.URL, "http://gfycat", "http://giant.gfycat", -1)
+				redditURL.URL += ".gif"
+			}
+
 			sourceURL := "https://reddit.com" + redditURL.Permalink
 
 			exists, err := existsInDB(redditURL.URL, sourceURL)
@@ -173,7 +203,6 @@ func updateSubReddit(name string) error {
 				continue
 			}
 			if exists {
-				log.Printf("%v already stored\n", sourceURL)
 				continue
 			}
 
