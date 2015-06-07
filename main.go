@@ -144,9 +144,7 @@ func serveAssets(r *mux.Router) {
 		"/assets/styles/items.css",
 		"/assets/scripts/gifs.js",
 		"/assets/scripts/packery.pkgd.min.js",
-		"/assets/images/loading.gif",
 		"/assets/styles/normalize.css",
-		"/assets/styles/skeleton.css",
 	}
 	for _, asset := range assets {
 		serveAsset(r, asset)

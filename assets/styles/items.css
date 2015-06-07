@@ -1,21 +1,8 @@
-.wrapper {
+.container {
   padding: 10px;
-}
-
-h1 {
-  margin-top: 0;
-  margin-bottom: 0;
-}
-
-.items {
-  margin: 0;
-  padding: 0;
 }
 
 .gif {
   cursor: pointer;
 }
 
-.item {
-  border:0;
-}
