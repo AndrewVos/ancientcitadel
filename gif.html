@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    {{ template "head.html" }}
+    <script src="/assets/scripts/gif.js"></script>
+  </head>
+  <body>
+    {{ template "google-analytics.html" }}
+    <div class="container">
+      <h1>ANCIENT CITADEL</h1>
+      <h2>brace thineself</h2>
+      {{ template "search.html" }}
+      <p> <a href="/sfw">safe for work</a> / <a href="/nsfw">not safe for work</a> </p>
+      {{ template "gif-item.html" . }}
+    </div>
+  </body>
+</html>

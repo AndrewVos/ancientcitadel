@@ -1,0 +1,21 @@
+<div class="item">
+  <video class="gif" data-width="{{.Width}}" data-height="{{.Height}}" preload="metadata" loop>
+    <source src="{{.WebMURL}}" type="video/webm">
+    <source src="{{.MP4URL}}" type="video/mp4">
+  </video>
+  <div>
+    {{.Title}}
+    <br>
+    <a href="{{.URL}}">link</a> / <a href="{{.SourceURL}}">comments</a> / share
+    (
+    <a href="https://twitter.com/intent/tweet?source=ancientcitadel.com&text={{.Title}} ancientcitadel.com/gif/{{.ID}}">twitter</a>
+    /
+    <a href="https://www.facebook.com/sharer/sharer.php?u=/gif/{{.ID}}&t={{.Title}}">facebook</a>
+    /
+    <a href="/gif/{{.ID}}">url</a>
+    )
+  </div>
+  <div style="display:none;">
+    {{.ToJSON}}
+  </div>
+</div>

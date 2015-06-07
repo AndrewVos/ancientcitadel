@@ -53,3 +53,5 @@ function moveGifsAround() {
     gutter: 5
   });
 }
+
+$(moveGifsAround);

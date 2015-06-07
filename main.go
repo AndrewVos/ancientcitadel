@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"html/template"
 	"log"
 	"math/rand"
 	"net/http"
@@ -14,7 +15,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/AndrewVos/ancientcitadel/gfycat"
@@ -26,6 +26,10 @@ import (
 	_ "github.com/lib/pq"
 )
 
+const (
+	PageSize = 20
+)
+
 type Page struct {
 	URLs        []URL
 	CurrentPage int
@@ -34,6 +38,7 @@ type Page struct {
 }
 
 type URL struct {
+	ID        int       `db:"id"`
 	CreatedAt time.Time `db:"created_at"`
 	Title     string    `db:"title"`
 	SourceURL string    `db:"source_url"`
@@ -57,8 +62,31 @@ func (u *URL) ToJSON() (string, error) {
 	return string(b), nil
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	template, err := template.ParseFiles("index.html")
+func gifHandler(w http.ResponseWriter, r *http.Request) {
+	template, err := template.ParseFiles("gif.html", "head.html", "search.html", "google-analytics.html", "gif-item.html")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Print(err)
+		return
+	}
+	id := mux.Vars(r)["id"]
+	url, err := getURL(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Print(err)
+		return
+	}
+
+	err = template.Execute(w, url)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Print(err)
+		return
+	}
+}
+
+func mainHandler(w http.ResponseWriter, r *http.Request) {
+	template, err := template.ParseFiles("index.html", "head.html", "search.html", "google-analytics.html", "gif-item.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Print(err)
@@ -73,19 +101,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	page.Query = r.URL.Query().Get("q")
 
-	page.URLs, err = getURLs(page.Query, nsfw, page.CurrentPage, 20)
+	page.URLs, err = getURLs(page.Query, nsfw, page.CurrentPage, PageSize)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Print(err)
 		return
 	}
 
-	work := "sfw"
-	if nsfw {
-		work = "nsfw"
-	}
-
-	page.NextPage, _ = url.Parse(fmt.Sprintf("/%v", work))
+	page.NextPage, _ = url.Parse("")
 	q := page.NextPage.Query()
 	if page.Query != "" {
 		q.Set("q", page.Query)
@@ -143,6 +166,7 @@ func serveAssets(r *mux.Router) {
 		"/assets/styles/main.css",
 		"/assets/styles/items.css",
 		"/assets/scripts/gifs.js",
+		"/assets/scripts/gif.js",
 		"/assets/scripts/packery.pkgd.min.js",
 		"/assets/styles/normalize.css",
 	}
@@ -263,6 +287,16 @@ func updateRedditForever() {
 	}()
 }
 
+func getURL(id string) (URL, error) {
+	db, err := db()
+	if err != nil {
+		return URL{}, err
+	}
+	var url URL
+	err = db.Get(&url, `SELECT * FROM urls WHERE id = $1 LIMIT 1`, id)
+	return url, err
+}
+
 func getURLs(query string, nsfw bool, page int, pageSize int) ([]URL, error) {
 	db, err := db()
 	if err != nil {
@@ -270,14 +304,7 @@ func getURLs(query string, nsfw bool, page int, pageSize int) ([]URL, error) {
 	}
 
 	var rows *sqlx.Rows
-	if query == "" {
-		rows, err = db.Queryx(`
-	SELECT * FROM urls
-		WHERE nsfw = $1
-		ORDER BY created_at DESC
-		LIMIT $2 OFFSET $3`,
-			nsfw, pageSize, (page-1)*pageSize)
-	} else {
+	if query != "" {
 		wordFinder := regexp.MustCompile("\\w+")
 		queryParts := wordFinder.FindAllString(query, -1)
 		tSearchQuery := strings.Join(queryParts, "|")
@@ -290,6 +317,13 @@ func getURLs(query string, nsfw bool, page int, pageSize int) ([]URL, error) {
 		ORDER BY ts_rank_cd(tsv, query) DESC
 		LIMIT $3 OFFSET $4`,
 			tSearchQuery, nsfw, pageSize, (page-1)*pageSize)
+	} else {
+		rows, err = db.Queryx(`
+	SELECT * FROM urls
+		WHERE nsfw = $1
+		ORDER BY created_at DESC
+		LIMIT $2 OFFSET $3`,
+			nsfw, pageSize, (page-1)*pageSize)
 	}
 
 	if err != nil {
@@ -363,9 +397,10 @@ func main() {
 
 	r := mux.NewRouter()
 	serveAssets(r)
-	r.Handle("/", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(handler)))
+	r.Handle("/", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(mainHandler)))
 	r.Handle("/api/random/{work}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(apiRandomHandler)))
-	r.Handle("/{work}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(handler)))
+	r.Handle("/{work}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(mainHandler)))
+	r.Handle("/gif/{id}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(gifHandler)))
 
 	http.Handle("/", r)
 	fmt.Printf("Starting on port %v\n", *port)
