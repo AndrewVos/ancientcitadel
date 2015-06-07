@@ -5,6 +5,14 @@ body {
   margin: 0;
 }
 
+.container {
+  padding: 10px;
+}
+
+.gif {
+  cursor: pointer;
+}
+
 .next-page {
   text-align: center;
   margin:0;

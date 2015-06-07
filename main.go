@@ -164,7 +164,6 @@ func serveAsset(r *mux.Router, asset string) {
 func serveAssets(r *mux.Router) {
 	assets := []string{
 		"/assets/styles/main.css",
-		"/assets/styles/items.css",
 		"/assets/scripts/gifs.js",
 		"/assets/scripts/gif.js",
 		"/assets/scripts/packery.pkgd.min.js",
