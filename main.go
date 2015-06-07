@@ -132,10 +132,25 @@ func apiRandomHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
-func serveAsset(r *mux.Router, assetPath string) {
-	r.HandleFunc(assetPath, func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, path.Join(".", assetPath))
+func serveAsset(r *mux.Router, asset string) {
+	r.HandleFunc(asset, func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, path.Join(".", asset))
 	})
+}
+
+func serveAssets(r *mux.Router) {
+	assets := []string{
+		"/assets/styles/main.css",
+		"/assets/styles/items.css",
+		"/assets/scripts/gifs.js",
+		"/assets/scripts/packery.pkgd.min.js",
+		"/assets/images/loading.gif",
+		"/assets/styles/normalize.css",
+		"/assets/styles/skeleton.css",
+	}
+	for _, asset := range assets {
+		serveAsset(r, asset)
+	}
 }
 
 func updateSubReddit(name string) error {
@@ -339,11 +354,7 @@ func main() {
 	flag.Parse()
 
 	r := mux.NewRouter()
-	serveAsset(r, "/assets/styles/main.css")
-	serveAsset(r, "/assets/styles/items.css")
-	serveAsset(r, "/assets/scripts/gifs.js")
-	serveAsset(r, "/assets/scripts/packery.pkgd.min.js")
-	serveAsset(r, "/assets/images/loading.gif")
+	serveAssets(r)
 	r.Handle("/", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(handler)))
 	r.Handle("/api/random/{work}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(apiRandomHandler)))
 	r.Handle("/{work}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(handler)))
