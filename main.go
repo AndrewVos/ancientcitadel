@@ -246,6 +246,7 @@ func updateRedditForever() {
 		"boobbounce", "boobgifs", "celebgifs",
 	}
 	for i := range reddits {
+		rand.Seed(time.Now().UnixNano())
 		j := rand.Intn(i + 1)
 		reddits[i], reddits[j] = reddits[j], reddits[i]
 	}
