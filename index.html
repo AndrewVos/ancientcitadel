@@ -9,7 +9,7 @@
     <div class="container">
       <h1>ANCIENT CITADEL</h1>
       <h2>brace thineself</h2>
-      {{ template "search.html" }}
+      {{ template "search.html" . }}
       <p> <a href="/">safe for work</a> / <a href="/nsfw">not safe for work</a> </p>
       {{ if .URLs }}
         <div class="items">
