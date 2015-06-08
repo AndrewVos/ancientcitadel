@@ -63,7 +63,7 @@ func (u *URL) ToJSON() (string, error) {
 	return string(b), nil
 }
 
-func (u *URL) Thumbnail() string {
+func (u URL) Thumbnail() string {
 	return fmt.Sprintf("http://thumbs.gfycat.com/%s-poster.jpg", u.GfyName)
 }
 
