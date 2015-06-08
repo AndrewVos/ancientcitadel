@@ -318,13 +318,12 @@ func updateRedditForever() {
 		"gifs", "perfectloops", "noisygifs", "analogygifs",
 		"reversegif", "funny_gifs", "funnygifs", "aww_gifs", "wheredidthesodago",
 		"AnimalsBeingJerks", "AnimalGIFs", "birdreactiongifs", "CatGifs", "catreactiongifs",
-		"Puggifs", "KimJongUnGifs", "SpaceGifs", "physicsgifs", "educationalgifs",
-		"chemicalreactiongifs", "mechanical_gifs", "shockwaveporn",
+		"Puggifs", "SpaceGifs", "physicsgifs", "educationalgifs", "shockwaveporn",
 		// nsfw
 		"gifsgonewild", "porn_gifs", "PornGifs", "NSFW_SEXY_GIF", "nsfwcelebgifs",
-		"adultgifs", "NSFW_GIF", "nsfw_gifs", "porngif", "randomsexygifs", "TittyDrop",
-		"boobbounce", "boobgifs",
+		"adultgifs", "NSFW_GIF", "nsfw_gifs", "porngif", "randomsexygifs",
 	}
+
 	for i := range reddits {
 		rand.Seed(time.Now().UnixNano())
 		j := rand.Intn(i + 1)
