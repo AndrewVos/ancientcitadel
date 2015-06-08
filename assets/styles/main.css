@@ -15,14 +15,6 @@ a:visited {
   color: #990100 !important;
 }
 
-.items {
-  position: relative;
-}
-
-.item {
-  position: absolute;
-}
-
 .item .item-top {
   padding-left: 3px;
   border-top-left-radius: 3px;

@@ -29,7 +29,13 @@ function columns() {
 }
 
 function moveGifsAround() {
+  // Measure maximum width before we make the items relative and absolute.
+  // This ensures that we get the width with the scrollbar included.
   var maximumWidth = Math.round($(".items").width() / columns());
+
+  $(".items").css("position", "relative");
+  $(".items .item").css("position", "absolute");
+
   maximumWidth -= gutter();
   maximumWidth += (gutter() / columns());
 
