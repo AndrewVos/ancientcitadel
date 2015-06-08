@@ -16,12 +16,7 @@ function gutter() {
 }
 
 function columns() {
-  var containerWidth = $(".items").width();
-  if (containerWidth <= 960) {
-    return 1;
-  }
-
-  var columns = Math.round(containerWidth / 450);
+  var columns = Math.round(screen.width / 500);
   if (columns == 0) {
     columns = 1;
   }
