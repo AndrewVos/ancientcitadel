@@ -6,6 +6,10 @@ $(document).on("click", ".gif", function() {
   }
 });
 
+function defaultGutter() {
+  return 15;
+}
+
 function gifsPerRow() {
   var width = $(".items").width();
   if (width <= 960) {
@@ -20,14 +24,14 @@ function gifsPerRow() {
 }
 
 function calculateMaximumWidth() {
-  var gutter = 5;
   var maximumWidth = 0;
   if (gifsPerRow() == 1) {
     maximumWidth = $(".items").width();
   } else {
     maximumWidth = $(".items").width() / gifsPerRow();
   }
-  maximumWidth -= ((gifsPerRow() - 1) * gutter);
+  maximumWidth -= defaultGutter() * (gifsPerRow() - 1);
+  maximumWidth += 20;
   return maximumWidth;
 }
 
@@ -45,13 +49,13 @@ function moveGifsAround() {
     width = maximumWidth;
     gif.css("height", height);
     gif.css("width", width);
-    item.css("width", gif.css("width"));
+    item.css("width", width);
   });
 
   var $container = $('.items');
   $container.packery({
     itemSelector: '.item',
-    gutter: 5
+    gutter: defaultGutter()
   });
 }
 
