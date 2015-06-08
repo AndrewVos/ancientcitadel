@@ -4,14 +4,13 @@
       <strong>{{.Title}}</strong>
     </p>
     <p>
-      <a href="{{.URL}}">link</a> / <a href="{{.SourceURL}}">comments</a> / share
-      (
-      <a href="https://twitter.com/intent/tweet?source=ancientcitadel.com&text={{.Title}} ancientcitadel.com/gif/{{.ID}}">twitter</a>
-      /
-      <a href="https://www.facebook.com/sharer/sharer.php?u=/gif/{{.ID}}&t={{.Title}}">facebook</a>
-      /
       <a href="/gif/{{.ID}}">url</a>
-      )
+      /
+      <a href="{{.SourceURL}}">view comments</a>
+      /
+      <a href="https://twitter.com/intent/tweet?source=ancientcitadel.com&text={{.Title}} ancientcitadel.com/gif/{{.ID}}">tweet this</a>
+      /
+      <a href="https://www.facebook.com/sharer/sharer.php?u=/gif/{{.ID}}&t={{.Title}}">facebook this</a>
     </p>
   </div>
   <video class="gif" data-width="{{.Width}}" data-height="{{.Height}}" preload="metadata" loop poster="{{.Thumbnail}}">
