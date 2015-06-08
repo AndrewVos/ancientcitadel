@@ -226,6 +226,9 @@ func validGIFURL(url string) bool {
 	if strings.HasSuffix(url, ".jpg") {
 		return false
 	}
+	if strings.Contains(url, "youtube.com") {
+		return false
+	}
 
 	if strings.Contains(url, "imgur.com") {
 		return true
