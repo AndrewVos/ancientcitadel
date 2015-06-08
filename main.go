@@ -420,7 +420,7 @@ func updateURL(id int, url URL) error {
 	if err != nil {
 		return err
 	}
-	_, err = db.Exec(`UPDATE urls SET nsfw = $4 WHERE id = $11`,
+	_, err = db.Exec(`UPDATE urls SET nsfw = $1 WHERE id = $2`,
 		url.NSFW,
 		id,
 	)
