@@ -6,57 +6,66 @@ $(document).on("click", ".gif", function() {
   }
 });
 
-function defaultGutter() {
-  return 15;
+$(function() {
+  moveGifsAround();
+  $(window).resize(moveGifsAround);
+});
+
+function gutter() {
+  return 10;
 }
 
-function gifsPerRow() {
-  var width = $(".items").width();
-  if (width <= 960) {
+function columns() {
+  var containerWidth = $(".items").width();
+  if (containerWidth <= 960) {
     return 1;
   }
 
-  var gifs = Math.round(width / 450);
-  if (gifs == 0) {
-    gifs = 1;
+  var columns = Math.round(containerWidth / 450);
+  if (columns == 0) {
+    columns = 1;
   }
-  return gifs;
-}
-
-function calculateMaximumWidth() {
-  var maximumWidth = 0;
-  if (gifsPerRow() == 1) {
-    maximumWidth = $(".items").width();
-  } else {
-    maximumWidth = $(".items").width() / gifsPerRow();
-  }
-  maximumWidth -= defaultGutter() * (gifsPerRow() - 1);
-  maximumWidth += 20;
-  return maximumWidth;
+  return columns;
 }
 
 function moveGifsAround() {
-  var maximumWidth = calculateMaximumWidth();
+  var maximumWidth = Math.round($(".items").width() / columns());
+  maximumWidth -= gutter();
+  maximumWidth += (gutter() / columns());
 
+  $(".item").width(maximumWidth);
+
+  $(".item .gif").each(function() {
+    var ratio = maximumWidth / $(this).data("width");
+    $(this).height(ratio * $(this).data("height"));
+  });
+
+  var bottoms = [0, 0, 0, 0];
+
+  var currentColumn = 0;
   $(".item").each(function() {
     var item = $(this);
-    var gif = item.find(".gif");
 
-    var width = gif.data("width");
-    var height = gif.data("height");
-    var ratio = maximumWidth / width;
-    height = height * ratio;
-    width = maximumWidth;
-    gif.css("height", height);
-    gif.css("width", width);
-    item.css("width", width);
+    var top = bottoms[currentColumn];
+    item.css("top",  top + "px");
+
+    bottoms[currentColumn] = top + item.height() + gutter();
+
+    var left = currentColumn * (maximumWidth + gutter());
+    item.css("left", left+"px");
+
+    currentColumn += 1;
+    if (currentColumn == columns()) {
+      currentColumn = 0;
+    }
   });
 
-  var $container = $('.items');
-  $container.packery({
-    itemSelector: '.item',
-    gutter: defaultGutter()
+
+  var maximumBottom = 0;
+  $.each(bottoms, function(i, b) {
+    if (b > maximumBottom) {
+      maximumBottom = b;
+    }
   });
+  $(".items").css("height", maximumBottom+"px");
 }
-
-$(moveGifsAround);

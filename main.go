@@ -213,7 +213,6 @@ func serveAssets(r *mux.Router) {
 		"/assets/styles/main.css",
 		"/assets/scripts/gifs.js",
 		"/assets/scripts/gif.js",
-		"/assets/scripts/packery.pkgd.min.js",
 		"/assets/styles/bootstrap.min.css",
 	}
 	for _, asset := range assets {
