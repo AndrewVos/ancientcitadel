@@ -1,13 +1,29 @@
 body {
-   background: #eee !important;
+   background:  #E8E8E8!important;
+   color: #333333 !important;
 }
 
+h1 {
+  color: #B90504 !important;
+}
+
+h1 small{
+  color: #990100 !important;
+}
+
+a {
+  color: #B90504 !important;
+}
+
+a:visited {
+  color: #990100 !important;
+}
 
 .item .item-top {
   padding-left: 3px;
   border-top-left-radius: 3px;
   border-top-right-radius: 3px;
-  background-color: white;
+  background-color: #F6F6F6;
   margin-bottom: 0;
 }
 
