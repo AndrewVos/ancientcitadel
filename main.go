@@ -51,11 +51,11 @@ type URL struct {
 	NSFW      bool      `db:"nsfw"`
 
 	// never used, just here to appease sqlx
-	TSV   string `db:"tsv"`
-	Query string `db:"query"`
+	TSV   string `db:"tsv" json:"-"`
+	Query string `db:"query" json:"-"`
 }
 
-func (u *URL) ToJSON() (string, error) {
+func (u URL) ToJSON() (string, error) {
 	b, err := json.MarshalIndent(u, " ", "")
 	if err != nil {
 		return "", err
