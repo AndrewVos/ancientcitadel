@@ -271,12 +271,22 @@ func updateSubReddit(name string) error {
 
 			sourceURL := "https://reddit.com" + redditURL.Permalink
 
-			exists, err := existsInDB(redditURL.URL, sourceURL)
+			url := URL{
+				Title:     redditURL.Title,
+				NSFW:      redditURL.Over18,
+				SourceURL: sourceURL,
+				URL:       redditURL.URL,
+				CreatedAt: time.Unix(int64(redditURL.Created), 0),
+			}
+
+			id, err := existsInDB(url)
 			if err != nil {
 				log.Println(err)
 				continue
 			}
-			if exists {
+
+			if id != 0 {
+				updateURL(id, url)
 				continue
 			}
 
@@ -286,21 +296,16 @@ func updateSubReddit(name string) error {
 				continue
 			}
 
-			url := URL{
-				Title:     redditURL.Title,
-				GfyName:   information.GfyName,
-				NSFW:      redditURL.Over18,
-				SourceURL: sourceURL,
-				URL:       redditURL.URL,
-				WebMURL:   information.WebMURL,
-				MP4URL:    information.MP4URL,
-				Width:     information.Width,
-				Height:    information.Height,
-				CreatedAt: time.Unix(int64(redditURL.Created), 0),
-			}
+			url.GfyName = information.GfyName
+			url.WebMURL = information.WebMURL
+			url.MP4URL = information.MP4URL
+			url.Width = information.Width
+			url.Height = information.Height
+
 			err = saveURL(url)
 			if err != nil {
 				log.Println(err)
+				continue
 			}
 		}
 		time.Sleep(2 * time.Second)
@@ -392,18 +397,35 @@ func getURLs(query string, nsfw bool, page int, pageSize int) ([]URL, error) {
 	return urls, nil
 }
 
-func existsInDB(url string, sourceURL string) (bool, error) {
+func existsInDB(url URL) (int, error) {
 	db, err := db()
 	if err != nil {
-		return false, err
+		return 0, err
 	}
 
-	var count int
-	err = db.Get(&count, "SELECT count(*) FROM urls WHERE url = $1 OR source_url = $2;", url, sourceURL)
+	var ids []int
+	err = db.Select(&ids, "SELECT id FROM urls WHERE url = $1 OR source_url = $2 LIMIT 1;", url.URL, url.SourceURL)
+
 	if err != nil {
-		return false, err
+		return 0, err
 	}
-	return count != 0, nil
+
+	if len(ids) == 1 {
+		return ids[0], nil
+	}
+	return 0, nil
+}
+
+func updateURL(id int, url URL) error {
+	db, err := db()
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(`UPDATE urls SET nsfw = $4 WHERE id = $11`,
+		url.NSFW,
+		id,
+	)
+	return err
 }
 
 func saveURL(url URL) error {
