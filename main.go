@@ -272,7 +272,7 @@ func updateRedditForever() {
 		// nsfw
 		"gifsgonewild", "porn_gifs", "PornGifs", "NSFW_SEXY_GIF", "nsfwcelebgifs",
 		"adultgifs", "NSFW_GIF", "nsfw_gifs", "porngif", "randomsexygifs", "TittyDrop",
-		"boobbounce", "boobgifs", "celebgifs",
+		"boobbounce", "boobgifs",
 	}
 	for i := range reddits {
 		rand.Seed(time.Now().UnixNano())
