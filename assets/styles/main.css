@@ -1,3 +1,5 @@
+/* Palette taken from http://www.colourlovers.com/palette/623761/Walking_Away */
+
 body {
    background: #E8E8E8 !important;
    color: #333333 !important;
@@ -15,11 +17,14 @@ a:visited {
   color: #990100 !important;
 }
 
-.item .item-top {
-  padding-left: 3px;
+.item {
+  background-color: #F6F6F6;
   border-top-left-radius: 3px;
   border-top-right-radius: 3px;
-  background-color: #F6F6F6;
+}
+
+.item .item-top {
+  padding-left: 3px;
   margin-bottom: 0;
 }
 
@@ -30,6 +35,8 @@ a:visited {
 .gif {
   width: 100%;
   cursor: pointer;
+  display: block;
+  background-color: #333333;
 }
 
 .next-page {

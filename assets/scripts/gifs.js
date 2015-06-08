@@ -32,6 +32,9 @@ function moveGifsAround() {
   var container = $(".items");
   var maximumWidth = Math.round(container.width() / columns());
 
+  maximumWidth -= gutter();
+  maximumWidth += (gutter() / columns());
+
   $(".item .gif").each(function() {
     var ratio = maximumWidth / $(this).data("width");
     $(this).height(ratio * $(this).data("height"));
