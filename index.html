@@ -6,11 +6,8 @@
   </head>
   <body>
     {{ template "google-analytics.html" }}
-    <div class="container">
-      <h1>ANCIENT CITADEL</h1>
-      <h2>brace thineself</h2>
-      {{ template "search.html" . }}
-      <p> <a href="/">safe for work</a> / <a href="/nsfw">not safe for work</a> </p>
+    <div class="container-fluid">
+      {{ template "navigation.html" }}
       {{ if .RequiresAgeVerification }}
         {{ template "age-verification.html" }}
       {{ else }}

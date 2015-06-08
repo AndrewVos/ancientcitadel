@@ -133,8 +133,8 @@ func (u URL) Thumbnail() string {
 
 func templates(layout string) []string {
 	defaultTemplates := []string{
+		"navigation.html",
 		"head.html",
-		"search.html",
 		"google-analytics.html",
 		"gif-item.html",
 		"age-verification.html",
@@ -214,7 +214,7 @@ func serveAssets(r *mux.Router) {
 		"/assets/scripts/gifs.js",
 		"/assets/scripts/gif.js",
 		"/assets/scripts/packery.pkgd.min.js",
-		"/assets/styles/normalize.css",
+		"/assets/styles/bootstrap.min.css",
 	}
 	for _, asset := range assets {
 		serveAsset(r, asset)

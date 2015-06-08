@@ -1,12 +1,5 @@
 body {
-  font: 1em 'Open Sans', Arial, Sans-serif;
-  color: #333;
-  background-color: #eee;
-  margin: 0;
-}
-
-.container {
-  padding: 10px;
+   background: #eee !important;
 }
 
 .gif {
