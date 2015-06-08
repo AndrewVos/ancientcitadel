@@ -11,20 +11,24 @@
       <h2>brace thineself</h2>
       {{ template "search.html" . }}
       <p> <a href="/">safe for work</a> / <a href="/nsfw">not safe for work</a> </p>
-      {{ if .URLs }}
-        <div class="items">
-          {{range .URLs}}
-            {{ template "gif-item.html" . }}
-          {{end}}
-        </div>
-        <div class="next-page">
-          <a href="{{.NextPage}}">BRING FORTH MORE GIFS</a>
-        </div>
+      {{ if .RequiresAgeVerification }}
+        {{ template "age-verification.html" }}
       {{ else }}
-        <p>
-          Looks like you've reached the end of the line! Well done! Maybe it's time to get out
-          there and live your life?
-        </p>
+        {{ if .URLs }}
+          <div class="items">
+            {{range .URLs}}
+              {{ template "gif-item.html" . }}
+            {{end}}
+          </div>
+          <div class="next-page">
+            <a href="{{.NextPage}}">BRING FORTH MORE GIFS</a>
+          </div>
+        {{ else }}
+          <p>
+            Looks like you've reached the end of the line! Well done! Maybe it's time to get out
+            there and live your life?
+          </p>
+        {{ end }}
       {{ end }}
     </div>
   </body>

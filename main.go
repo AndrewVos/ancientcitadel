@@ -32,9 +32,73 @@ const (
 
 type Page struct {
 	URLs        []URL
+	URL         URL
 	CurrentPage int
 	NextPage    *url.URL
 	Query       string
+	NSFW        bool
+	Over18      bool
+}
+
+func (p Page) RequiresAgeVerification() bool {
+	return p.NSFW && p.Over18 == false
+}
+
+func NewPageFromRequest(w http.ResponseWriter, r *http.Request) (Page, error) {
+	page := Page{CurrentPage: 1}
+	if p := r.URL.Query().Get("page"); p != "" {
+		page.CurrentPage, _ = strconv.Atoi(p)
+	}
+
+	page.Query = r.URL.Query().Get("q")
+
+	page.NSFW = mux.Vars(r)["work"] == "nsfw"
+
+	id := mux.Vars(r)["id"]
+	if id != "" {
+		url, err := getURL(id)
+		if err != nil {
+			return Page{}, err
+		}
+		page.URL = url
+		page.NSFW = url.NSFW
+	} else {
+		urls, err := getURLs(page.Query, page.NSFW, page.CurrentPage, PageSize)
+		if err != nil {
+			return Page{}, err
+		}
+		page.URLs = urls
+	}
+
+	page.NextPage, _ = url.Parse("")
+	q := page.NextPage.Query()
+	if page.Query != "" {
+		q.Set("q", page.Query)
+	}
+	q.Set("page", fmt.Sprintf("%v", page.CurrentPage+1))
+	page.NextPage.RawQuery = q.Encode()
+
+	if r.Method == "POST" {
+		r.ParseForm()
+		if r.FormValue("over18") == "yes" {
+			expiration := time.Now().Add(365 * 24 * time.Hour)
+			cookie := http.Cookie{
+				Name:    "over18",
+				Value:   "yes",
+				Expires: expiration,
+				Path:    "/",
+			}
+			http.SetCookie(w, &cookie)
+			page.Over18 = true
+		}
+	} else {
+		over18, err := r.Cookie("over18")
+		if err == nil {
+			page.Over18 = over18.Value == "yes"
+		}
+	}
+
+	return page, nil
 }
 
 type URL struct {
@@ -67,22 +131,36 @@ func (u URL) Thumbnail() string {
 	return fmt.Sprintf("http://thumbs.gfycat.com/%s-poster.jpg", u.GfyName)
 }
 
-func gifHandler(w http.ResponseWriter, r *http.Request) {
-	template, err := template.ParseFiles("gif.html", "head.html", "search.html", "google-analytics.html", "gif-item.html")
+func templates(layout string) []string {
+	defaultTemplates := []string{
+		"head.html",
+		"search.html",
+		"google-analytics.html",
+		"gif-item.html",
+		"age-verification.html",
+	}
+	templates := []string{layout}
+	for _, template := range defaultTemplates {
+		templates = append(templates, template)
+	}
+	return templates
+}
+
+func genericHandler(layout string, w http.ResponseWriter, r *http.Request) {
+	template, err := template.ParseFiles(templates(layout)...)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Print(err)
 		return
 	}
-	id := mux.Vars(r)["id"]
-	url, err := getURL(id)
+	page, err := NewPageFromRequest(w, r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Print(err)
 		return
 	}
 
-	err = template.Execute(w, url)
+	err = template.Execute(w, page)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Print(err)
@@ -90,48 +168,12 @@ func gifHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func gifHandler(w http.ResponseWriter, r *http.Request) {
+	genericHandler("gif.html", w, r)
+}
+
 func mainHandler(w http.ResponseWriter, r *http.Request) {
-	template, err := template.ParseFiles("index.html", "head.html", "search.html", "google-analytics.html", "gif-item.html")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Print(err)
-		return
-	}
-	nsfw := mux.Vars(r)["work"] == "nsfw"
-
-	page := Page{CurrentPage: 1}
-	if p := r.URL.Query().Get("page"); p != "" {
-		page.CurrentPage, _ = strconv.Atoi(p)
-	}
-
-	page.Query = r.URL.Query().Get("q")
-
-	page.URLs, err = getURLs(page.Query, nsfw, page.CurrentPage, PageSize)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Print(err)
-		return
-	}
-
-	page.NextPage, _ = url.Parse("")
-	q := page.NextPage.Query()
-	if page.Query != "" {
-		q.Set("q", page.Query)
-	}
-	q.Set("page", fmt.Sprintf("%v", page.CurrentPage+1))
-	page.NextPage.RawQuery = q.Encode()
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Print(err)
-		return
-	}
-	err = template.Execute(w, page)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Print(err)
-		return
-	}
+	genericHandler("index.html", w, r)
 }
 
 func apiRandomHandler(w http.ResponseWriter, r *http.Request) {

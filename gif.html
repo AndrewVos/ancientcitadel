@@ -11,7 +11,11 @@
       <h2>brace thineself</h2>
       {{ template "search.html" }}
       <p> <a href="/">safe for work</a> / <a href="/nsfw">not safe for work</a> </p>
-      {{ template "gif-item.html" . }}
+      {{ if .RequiresAgeVerification }}
+        {{ template "age-verification.html" }}
+      {{ else }}
+        {{ template "gif-item.html" .URL }}
+      {{ end }}
     </div>
   </body>
 </html>
