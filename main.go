@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -209,15 +210,15 @@ func serveAsset(r *mux.Router, asset string) {
 }
 
 func serveAssets(r *mux.Router) {
-	assets := []string{
-		"/assets/styles/main.css",
-		"/assets/scripts/gifs.js",
-		"/assets/scripts/pack.js",
-		"/assets/scripts/gif.js",
-		"/assets/styles/bootstrap.min.css",
-	}
-	for _, asset := range assets {
-		serveAsset(r, asset)
+	paths := []string{"styles", "scripts", "images", "favicons"}
+	for _, assetSubDirectory := range paths {
+		files, err := ioutil.ReadDir(path.Join("assets", assetSubDirectory))
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, file := range files {
+			serveAsset(r, "/"+path.Join("assets", assetSubDirectory, file.Name()))
+		}
 	}
 }
 
