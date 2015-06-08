@@ -7,7 +7,6 @@ import (
 	"html/template"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -324,11 +323,11 @@ func updateRedditForever() {
 		"adultgifs", "NSFW_GIF", "nsfw_gifs", "porngif", "randomsexygifs",
 	}
 
-	for i := range reddits {
-		rand.Seed(time.Now().UnixNano())
-		j := rand.Intn(i + 1)
-		reddits[i], reddits[j] = reddits[j], reddits[i]
-	}
+	// for i := range reddits {
+	// 	rand.Seed(time.Now().UnixNano())
+	// 	j := rand.Intn(i + 1)
+	// 	reddits[i], reddits[j] = reddits[j], reddits[i]
+	// }
 
 	go func() {
 		for {
