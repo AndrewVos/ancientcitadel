@@ -8,14 +8,15 @@ $(document).on("click", ".gif", function() {
 
 function gifsPerRow() {
   var width = $(".items").width();
-  if (width < 800) {
+  if (width <= 960) {
     return 1;
-  } else if (width < 1000) {
-    return 2;
-  } else if (width < 1400) {
-    return 3;
   }
-  return 4;
+
+  var gifs = Math.round(width / 450);
+  if (gifs == 0) {
+    gifs = 1;
+  }
+  return gifs;
 }
 
 function calculateMaximumWidth() {
