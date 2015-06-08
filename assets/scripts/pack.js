@@ -19,32 +19,35 @@ $.fn.pack = function(options) {
 
   $(options.selector).width(maximumWidth);
 
-  var bottoms = [0, 0, 0, 0];
+  var bottoms = [];
+  for (i = 0; i < options.columns; i++) {
+    bottoms.push(0);
+  }
 
-  var currentColumn = 0;
   $(options.selector).each(function() {
     var item = $(this);
+    var shortestColumn = 0;
+    for (i = 0; i < bottoms.length; i++) {
+      if (bottoms[i] < bottoms[shortestColumn]) {
+        shortestColumn = i;
+      }
+    }
 
-    var top = bottoms[currentColumn];
+    var top = bottoms[shortestColumn];
     item.css("top",  top + "px");
 
-    bottoms[currentColumn] = top + item.height() + options.gutter;
+    bottoms[shortestColumn] = top + item.height() + options.gutter;
 
-    var left = currentColumn * (maximumWidth + options.gutter);
+    var left = shortestColumn * (maximumWidth + options.gutter);
     item.css("left", left+"px");
-
-    currentColumn += 1;
-    if (currentColumn == options.columns) {
-      currentColumn = 0;
-    }
   });
 
-  var maximumBottom = 0;
-  $.each(bottoms, function(i, b) {
-    if (b > maximumBottom) {
-      maximumBottom = b;
+  var longestBottom = 0;
+  for (i = 0; i < bottoms.length; i++) {
+    if (bottoms[i] > longestBottom) {
+      longestBottom = bottoms[i];
     }
-  });
-  container.css("height", maximumBottom+"px");
+  }
+  container.css("height", longestBottom+"px");
 }
 
