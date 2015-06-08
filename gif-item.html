@@ -1,5 +1,5 @@
 <div class="item">
-  <video class="gif" data-width="{{.Width}}" data-height="{{.Height}}" preload="metadata" loop>
+  <video class="gif" data-width="{{.Width}}" data-height="{{.Height}}" preload="metadata" loop poster={{.Thumbnail}}>
     <source src="{{.WebMURL}}" type="video/webm">
     <source src="{{.MP4URL}}" type="video/mp4">
   </video>

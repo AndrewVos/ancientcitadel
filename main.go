@@ -43,6 +43,7 @@ type URL struct {
 	Title     string    `db:"title"`
 	SourceURL string    `db:"source_url"`
 	URL       string    `db:"url"`
+	GfyName   string    `db:"gfy_name"`
 	WebMURL   string    `db:"webmurl"`
 	MP4URL    string    `db:"mp4url"`
 	Width     int       `db:"width"`
@@ -60,6 +61,10 @@ func (u *URL) ToJSON() (string, error) {
 		return "", err
 	}
 	return string(b), nil
+}
+
+func (u *URL) Thumbnail() string {
+	return fmt.Sprintf("http://thumbs.gfycat.com/%s-poster.jpg", u.GfyName)
 }
 
 func gifHandler(w http.ResponseWriter, r *http.Request) {
@@ -236,8 +241,9 @@ func updateSubReddit(name string) error {
 			}
 
 			url := URL{
-				NSFW:      redditURL.Over18,
 				Title:     redditURL.Title,
+				GfyName:   information.GfyName,
+				NSFW:      redditURL.Over18,
 				SourceURL: sourceURL,
 				URL:       redditURL.URL,
 				WebMURL:   information.WebMURL,
@@ -362,12 +368,13 @@ func saveURL(url URL) error {
 
 	_, err = db.Exec(`
 	INSERT INTO urls (
-		created_at, title, nsfw, url, source_url, webmurl, mp4url, width, height
+		created_at, title, gfy_name, nsfw, url, source_url, webmurl, mp4url, width, height
 	) VALUES (
-		$1, $2, $3, $4, $5, $6, $7, $8, $9
+		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 	)`,
 		url.CreatedAt,
 		url.Title,
+		url.GfyName,
 		url.NSFW,
 		url.URL,
 		url.SourceURL,

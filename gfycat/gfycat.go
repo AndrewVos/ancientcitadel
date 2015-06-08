@@ -10,6 +10,7 @@ import (
 )
 
 type GfyCatInformation struct {
+	GfyName string
 	WebMURL string
 	MP4URL  string
 	Width   int
@@ -76,6 +77,7 @@ func Gif(gifURL string) (GfyCatInformation, error) {
 	}
 
 	return GfyCatInformation{
+		GfyName: uploadedGif.GfyName,
 		WebMURL: uploadedGif.WebMURL,
 		MP4URL:  uploadedGif.MP4URL,
 		Width:   j["gfyItem"].Width,
