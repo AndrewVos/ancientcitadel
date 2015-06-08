@@ -37,11 +37,11 @@ type Page struct {
 	NextPage    *url.URL
 	Query       string
 	NSFW        bool
-	Over18      bool
+	AgeVerified bool
 }
 
 func (p Page) RequiresAgeVerification() bool {
-	return p.NSFW && p.Over18 == false
+	return p.NSFW && p.AgeVerified == false
 }
 
 func NewPageFromRequest(w http.ResponseWriter, r *http.Request) (Page, error) {
@@ -80,21 +80,21 @@ func NewPageFromRequest(w http.ResponseWriter, r *http.Request) (Page, error) {
 
 	if r.Method == "POST" {
 		r.ParseForm()
-		if r.FormValue("over18") == "yes" {
+		if r.FormValue("age-verified") == "yes" {
 			expiration := time.Now().Add(365 * 24 * time.Hour)
 			cookie := http.Cookie{
-				Name:    "over18",
+				Name:    "age-verified",
 				Value:   "yes",
 				Expires: expiration,
 				Path:    "/",
 			}
 			http.SetCookie(w, &cookie)
-			page.Over18 = true
+			page.AgeVerified = true
 		}
 	} else {
-		over18, err := r.Cookie("over18")
+		ageVerified, err := r.Cookie("age-verified")
 		if err == nil {
-			page.Over18 = over18.Value == "yes"
+			page.AgeVerified = ageVerified.Value == "yes"
 		}
 	}
 
