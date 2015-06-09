@@ -1,15 +1,11 @@
 /* Palette taken from http://www.colourlovers.com/palette/623761/Walking_Away */
 
 @media (max-width: 1000px) {
-  * {
-    font-size:1.1em;
-  }
+  * { font-size:1.1em; }
 }
 
 @media (min-width: 1001px) {
-  * {
-    font-size:1em;
-  }
+  * { font-size:1em; }
 }
 
 body {
@@ -31,8 +27,8 @@ a:visited {
 
 .item {
   background-color: #F6F6F6;
-  border-top-left-radius: 5px;
-  border-top-right-radius: 5px;
+  border-radius: 5px;
+  border: 3px solid #333333;
 }
 
 .item .item-top {
