@@ -39,6 +39,7 @@ type Page struct {
 	Query       string
 	NSFW        bool
 	AgeVerified bool
+	Top         bool
 }
 
 func (p Page) RequiresAgeVerification() bool {
@@ -52,6 +53,7 @@ func NewPageFromRequest(w http.ResponseWriter, r *http.Request) (Page, error) {
 	}
 
 	page.Query = r.URL.Query().Get("q")
+	page.Top = r.URL.Query().Get("top") == "1"
 
 	page.NSFW = mux.Vars(r)["work"] == "nsfw"
 
@@ -63,6 +65,16 @@ func NewPageFromRequest(w http.ResponseWriter, r *http.Request) (Page, error) {
 		}
 		page.URL = url
 		page.NSFW = url.NSFW
+		err = storeURLView(url)
+		if err != nil {
+			return Page{}, err
+		}
+	} else if page.Top {
+		urls, err := getTopURLs(page.NSFW, page.CurrentPage, PageSize)
+		if err != nil {
+			return Page{}, err
+		}
+		page.URLs = urls
 	} else {
 		urls, err := getURLs(page.Query, page.NSFW, page.CurrentPage, PageSize)
 		if err != nil {
@@ -114,6 +126,7 @@ type URL struct {
 	Width     int       `db:"width"`
 	Height    int       `db:"height"`
 	NSFW      bool      `db:"nsfw"`
+	Views     int       `db:"views"`
 
 	// never used, just here to appease sqlx
 	TSV   string `db:"tsv" json:"-"`
@@ -346,6 +359,15 @@ func updateRedditForever() {
 	}()
 }
 
+func storeURLView(url URL) error {
+	db, err := db()
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(`INSERT INTO url_views (url_id) VALUES ($1)`, url.ID)
+	return err
+}
+
 func getURL(id string) (URL, error) {
 	db, err := db()
 	if err != nil {
@@ -354,6 +376,41 @@ func getURL(id string) (URL, error) {
 	var url URL
 	err = db.Get(&url, `SELECT * FROM urls WHERE id = $1 LIMIT 1`, id)
 	return url, err
+}
+
+func getTopURLs(nsfw bool, page int, pageSize int) ([]URL, error) {
+	db, err := db()
+	if err != nil {
+		return nil, err
+	}
+
+	var rows *sqlx.Rows
+
+	rows, err = db.Queryx(`
+		SELECT urls.*,
+			COUNT(url_views.created_at) AS views
+			FROM urls
+			INNER JOIN url_views on url_views.url_id = urls.id
+			WHERE nsfw = $1
+			GROUP BY urls.id
+			ORDER BY views DESC
+			LIMIT $2 OFFSET $3
+		`,
+		nsfw, pageSize, (page-1)*pageSize)
+
+	if err != nil {
+		return nil, err
+	}
+	var urls []URL
+	for rows.Next() {
+		var url URL
+		err := rows.StructScan(&url)
+		if err != nil {
+			return nil, err
+		}
+		urls = append(urls, url)
+	}
+	return urls, nil
 }
 
 func getURLs(query string, nsfw bool, page int, pageSize int) ([]URL, error) {
@@ -475,9 +532,9 @@ func main() {
 	r := mux.NewRouter()
 	serveAssets(r)
 	r.Handle("/", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(mainHandler)))
-	r.Handle("/api/random/{work}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(apiRandomHandler)))
-	r.Handle("/{work}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(mainHandler)))
-	r.Handle("/gif/{id}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(gifHandler)))
+	r.Handle("/api/random/{work:nsfw|sfw}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(apiRandomHandler)))
+	r.Handle("/{work:nsfw|sfw}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(mainHandler)))
+	r.Handle("/gif/{id:\\d+}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(gifHandler)))
 
 	http.Handle("/", r)
 	fmt.Printf("Starting on port %v\n", *port)
