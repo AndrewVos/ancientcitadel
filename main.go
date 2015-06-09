@@ -226,7 +226,7 @@ func serveAsset(r *mux.Router, asset string) {
 }
 
 func serveAssets(r *mux.Router) {
-	paths := []string{"styles", "scripts", "images", "favicons"}
+	paths := []string{"styles", "scripts", "favicons"}
 	for _, assetSubDirectory := range paths {
 		files, err := ioutil.ReadDir(path.Join("assets", assetSubDirectory))
 		if err != nil {
