@@ -17,7 +17,7 @@ $.fn.pack = function(options) {
   maximumWidth -= options.gutter;
   maximumWidth += (options.gutter / options.columns);
 
-  $(options.selector).width(maximumWidth);
+  $(options.selector).outerWidth(maximumWidth);
 
   var bottoms = [];
   for (i = 0; i < options.columns; i++) {
@@ -36,7 +36,7 @@ $.fn.pack = function(options) {
     var top = bottoms[shortestColumn];
     item.css("top",  top + "px");
 
-    bottoms[shortestColumn] = top + item.height() + options.gutter;
+    bottoms[shortestColumn] = top + item.outerHeight() + options.gutter;
 
     var left = shortestColumn * (maximumWidth + options.gutter);
     item.css("left", left+"px");
