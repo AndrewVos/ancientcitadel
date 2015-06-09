@@ -128,6 +128,10 @@ func (u URL) ToJSON() (string, error) {
 	return string(b), nil
 }
 
+func (u URL) ShareMarkdown() string {
+	return fmt.Sprintf("![%s](%s)", u.URL, u.URL)
+}
+
 func (u URL) Thumbnail() string {
 	return fmt.Sprintf("http://thumbs.gfycat.com/%s-poster.jpg", u.GfyName)
 }

@@ -6,15 +6,35 @@
       </a>
     </p>
     <p>
-      <a href="{{.SourceURL}}">view comments</a>
+      <a href="{{.SourceURL}}">comments</a>
       /
-      <a href="https://twitter.com/intent/tweet?source=ancientcitadel.com&text={{.Title}} ancientcitadel.com/gif/{{.ID}}">tweet this</a>
-      /
-      <a href="https://www.facebook.com/sharer/sharer.php?u=/gif/{{.ID}}&t={{.Title}}">facebook this</a>
+      <a href="#share{{.ID}}">share</a>
     </p>
   </div>
   <video class="gif" data-width="{{.Width}}" data-height="{{.Height}}" preload="metadata" loop poster="{{.Thumbnail}}">
     <source src="{{.WebMURL}}" type="video/webm">
     <source src="{{.MP4URL}}" type="video/mp4">
   </video>
+  <div class="remodal" data-remodal-id="share{{.ID}}">
+    <button data-remodal-action="close" class="remodal-close"></button>
+    <h1>Share this</h1>
+    <p>
+      <h2>
+        <a class="ios-intent" target="_blank" href="https://twitter.com/intent/tweet?source=ancientcitadel.com&text={{.Title}} ancientcitadel.com/gif/{{.ID}}" data-ios-intent="twitter://post?message={{.Title}} ancientcitadel.com/gif/{{.ID}}">on twitter</a>
+      </h2>
+      <h2>
+        <a href="https://www.facebook.com/sharer/sharer.php?u=/gif/{{.ID}}&t={{.Title}}">on facebook</a>
+      </h2>
+      <div class="form-group">
+        <label for="shareMarkdown">Markdown</label>
+        <input type="text" class="form-control" value="{{.ShareMarkdown}}" id="shareMarkdown">
+      </div>
+      <div class="form-group">
+        <label for="shareGif">GIF</label>
+        <input type="text" class="form-control" value="{{.URL}}" id="shareGif">
+      </div>
+    </p>
+    <br>
+    <button data-remodal-action="cancel" class="remodal-cancel">Close</button>
+  </div>
 </div>
