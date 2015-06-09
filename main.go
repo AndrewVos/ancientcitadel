@@ -333,8 +333,8 @@ func updateRedditForever() {
 	reddits := []string{
 		// sfw
 		"gifs", "perfectloops", "noisygifs", "analogygifs",
-		"reversegif", "funny_gifs", "funnygifs", "aww_gifs", "wheredidthesodago",
-		"AnimalsBeingJerks", "AnimalGIFs", "birdreactiongifs", "CatGifs", "catreactiongifs",
+		"reversegif", "funny_gifs", "funnygifs", "aww_gifs",
+		"AnimalsBeingJerks", "shittyreactiongifs", "CatGifs",
 		"Puggifs", "SpaceGifs", "physicsgifs", "educationalgifs", "shockwaveporn",
 		// nsfw
 		"gifsgonewild", "porn_gifs", "PornGifs", "NSFW_SEXY_GIF", "nsfwcelebgifs",
