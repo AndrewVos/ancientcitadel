@@ -1,17 +1,27 @@
-<p class="navigation">
-  <h1><a href="/">ANCIENT CITADEL</a> <small>brace thineself</small></h1>
-  <p>
-    <a href="/">safe for work</a> (<a href="/?top=1">top</a>)
-    /
-    <a href="/nsfw">not safe for work</a> (<a href="/nsfw?top=1">top</a>)
-  </p>
-  <div class="search">
-    <form method="GET" class="form-inline">
-      <input type="hidden" name="page" value="1"></input>
-      <div class="form-group">
-        <input type="text" class="form-control" name="q" value="{{.Query}}" required placeholder="wanna find something?"></input>
-      </div>
-      <input class="btn btn-default" type="submit" value="search"></button>
-    </form>
+<nav class="navbar navbar-default navbar-fixed-top headroom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="/">ANCIENT CITADEL</a>
+    </div>
+    <div class="collapse navbar-collapse">
+      <ul class="nav navbar-nav">
+        <li class="{{if not .Top}}active{{end}}"><a href="{{if .NSFW}}/nsfw{{else}}/{{end}}">new</a> </li>
+      </ul>
+      <ul class="nav navbar-nav">
+        <li class="{{if .Top}}active{{end}}"><a href="{{if .NSFW}}/nsfw/top{{else}}/top{{end}}">top</a> </li>
+      </ul>
+      <form class="navbar-form navbar-right" role="search">
+        <input type="hidden" name="page" value="1"></input>
+        <div class="form-group">
+          <input type="text" class="form-control" name="q" value="{{.Query}}" placeholder="wanna find something?">
+        </div>
+        <input class="btn btn-default" type="submit" class="btn btn-default" value="brace thineself">
+      </form>
+      <ul class="nav navbar-nav navbar-right">
+        <li class="{{if .NSFW}}active{{end}}">
+          <a href="{{if .NSFW}}/{{else}}/nsfw{{end}}">adult mode {{if .NSFW}}&#10004;{{end}}</a>
+        </li>
+      </ul>
+    </div>
   </div>
-</p>
+</nav>

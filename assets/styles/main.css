@@ -1,16 +1,17 @@
 /* Palette taken from http://www.colourlovers.com/palette/623761/Walking_Away */
 
-@media (max-width: 1000px) {
-  * { font-size:1.1em; }
-}
-
-@media (min-width: 1001px) {
-  * { font-size:1em; }
-}
-
 body {
    background: #E8E8E8 !important;
    color: #333333 !important;
+   padding-top: 70px;
+}
+
+.headroom--pinned {
+  display: block;
+}
+
+.headroom--unpinned {
+  display: none;
 }
 
 h1 small{

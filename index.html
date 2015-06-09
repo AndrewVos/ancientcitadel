@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     {{ template "head.html" }}
     <script src="/assets/scripts/pack.js"></script>
@@ -7,8 +7,8 @@
   </head>
   <body>
     {{ template "google-analytics.html" }}
+    {{ template "navigation.html" . }}
     <div class="container-fluid">
-      {{ template "navigation.html" . }}
 
       {{ if .RequiresAgeVerification }}
         {{ template "age-verification.html" }}

@@ -53,8 +53,7 @@ func NewPageFromRequest(w http.ResponseWriter, r *http.Request) (Page, error) {
 	}
 
 	page.Query = r.URL.Query().Get("q")
-	page.Top = r.URL.Query().Get("top") == "1"
-
+	page.Top = mux.Vars(r)["top"] == "top"
 	page.NSFW = mux.Vars(r)["work"] == "nsfw"
 
 	id := mux.Vars(r)["id"]
@@ -531,9 +530,12 @@ func main() {
 
 	r := mux.NewRouter()
 	serveAssets(r)
-	r.Handle("/", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(mainHandler)))
 	r.Handle("/api/random/{work:nsfw|sfw}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(apiRandomHandler)))
-	r.Handle("/{work:nsfw|sfw}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(mainHandler)))
+	r.Handle("/", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(mainHandler)))
+	r.Handle("/{top:top}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(mainHandler)))
+	r.Handle("/{work:nsfw}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(mainHandler)))
+	r.Handle("/{work:nsfw}/{top:top}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(mainHandler)))
+
 	r.Handle("/gif/{id:\\d+}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(gifHandler)))
 
 	http.Handle("/", r)

@@ -382,8 +382,13 @@
     "grid.less",
     "forms.less",
     "buttons.less",
+    "responsive-utilities.less",
+    "navs.less",
+    "navbar.less",
     "alerts.less"
   ],
-  "js": [],
-  "customizerUrl": "http://getbootstrap.com/customize/?id=dcacc21c23f8993b90d7"
+  "js": [
+    "collapse.js"
+  ],
+  "customizerUrl": "http://getbootstrap.com/customize/?id=d4de4ee47532dc2056ff"
 }
