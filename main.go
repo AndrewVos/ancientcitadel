@@ -423,7 +423,7 @@ func getURLs(query string, nsfw bool, page int, pageSize int) ([]URL, error) {
 	if query != "" {
 		wordFinder := regexp.MustCompile("\\w+")
 		queryParts := wordFinder.FindAllString(query, -1)
-		tSearchQuery := strings.Join(queryParts, "|")
+		tSearchQuery := strings.Join(queryParts, "&")
 
 		rows, err = db.Queryx(`
 	SELECT * FROM urls,
