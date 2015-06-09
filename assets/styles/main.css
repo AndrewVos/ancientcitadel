@@ -3,15 +3,6 @@
 body {
    background: #E8E8E8 !important;
    color: #333333 !important;
-   padding-top: 70px;
-}
-
-.headroom--pinned {
-  display: block;
-}
-
-.headroom--unpinned {
-  display: none;
 }
 
 h1 small{
