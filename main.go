@@ -282,9 +282,9 @@ func validGIFURL(url string) bool {
 }
 
 func updateSubReddit(name string) error {
-	log.Printf("Downloading %q...\n", name)
 	subReddit := reddit.SubReddit{Name: name}
 
+	fmt.Printf("downloading /r/%v...\n", name)
 	for {
 		redditURLs, err := subReddit.NextPage()
 		if err != nil {
@@ -293,7 +293,6 @@ func updateSubReddit(name string) error {
 		if len(redditURLs) == 0 {
 			return nil
 		}
-		log.Printf("Downloaded %d urls from /r/%v\n", len(redditURLs), name)
 		for _, redditURL := range redditURLs {
 			if validGIFURL(redditURL.URL) == false {
 				continue
@@ -546,8 +545,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	updateRedditForever()
-
 	port := flag.String("port", "8080", "the port to bind to")
 	flag.Parse()
 
@@ -563,7 +560,9 @@ func main() {
 	r.Handle("/gif/{id:\\d+}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(gifHandler)))
 
 	http.Handle("/", r)
-	fmt.Printf("Starting on port %v\n", *port)
+	fmt.Printf("Starting on port %v...\n", *port)
+
+	updateRedditForever()
 	err = http.ListenAndServe("0.0.0.0:"+*port, nil)
 	log.Fatal(err)
 }
