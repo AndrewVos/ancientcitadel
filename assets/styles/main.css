@@ -29,8 +29,11 @@ body {
   float: left;
 }
 
-.navbar li.navbar-brand {
+.navbar li.navbar-brand h1 {
   font-size: 25px;
+  padding: 0;
+  display: inline;
+  line-height: 50px;
 }
 
 .navbar li.active {
