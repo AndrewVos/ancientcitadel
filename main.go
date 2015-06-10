@@ -140,6 +140,10 @@ func (u URL) ToJSON() (string, error) {
 	return string(b), nil
 }
 
+func (u URL) HomeURL() string {
+	return fmt.Sprintf("/gif/%v", u.ID)
+}
+
 func (u URL) ShareMarkdown() string {
 	return fmt.Sprintf("![%s](%s)", u.URL, u.URL)
 }
@@ -191,6 +195,25 @@ func gifHandler(w http.ResponseWriter, r *http.Request) {
 
 func mainHandler(w http.ResponseWriter, r *http.Request) {
 	genericHandler("index.html", w, r)
+}
+
+func sitemapHandler(w http.ResponseWriter, r *http.Request) {
+	db, err := db()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Print(err)
+		return
+	}
+
+	var urls []URL
+	err = db.Select(&urls, `SELECT * FROM urls WHERE nsfw = $1 ORDER BY created_at DESC`, false)
+
+	w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>` + "\n"))
+	w.Write([]byte(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` + "\n"))
+	for _, url := range urls {
+		w.Write([]byte(fmt.Sprintf("  <url><loc>http://ancientcitadel.com%v</loc></url>\n", url.HomeURL())))
+	}
+	w.Write([]byte("</urlset>\n"))
 }
 
 func apiRandomHandler(w http.ResponseWriter, r *http.Request) {
@@ -535,6 +558,7 @@ func main() {
 	r.Handle("/{top:top}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(mainHandler)))
 	r.Handle("/{work:nsfw}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(mainHandler)))
 	r.Handle("/{work:nsfw}/{top:top}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(mainHandler)))
+	r.Handle("/sitemap.xml", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(sitemapHandler)))
 
 	r.Handle("/gif/{id:\\d+}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(gifHandler)))
 
