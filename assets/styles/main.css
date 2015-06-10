@@ -48,7 +48,7 @@ body {
 
 @media (max-width: 920px) {
   .navbar {
-    height: 260px;
+    height: 310px;
   }
   .navbar ul li {
     float: none;
@@ -56,8 +56,8 @@ body {
   .navbar li.navbar-form {
     float: none;
   }
-  .navbar li.navbar-form input[type=submit] {
-    display: none;
+  .navbar li.navbar-form input[type=text] {
+    width: 100%;
   }
 }
 
