@@ -20,7 +20,7 @@
     "@font-family-serif": "Georgia, \"Times New Roman\", Times, serif",
     "@font-family-monospace": "Menlo, Monaco, Consolas, \"Courier New\", monospace",
     "@font-family-base": "@font-family-sans-serif",
-    "@font-size-base": "18px",
+    "@font-size-base": "14px",
     "@font-size-large": "ceil((@font-size-base * 1.25))",
     "@font-size-small": "ceil((@font-size-base * 0.85))",
     "@font-size-h1": "floor((@font-size-base * 2.6))",
@@ -377,18 +377,10 @@
     "@hr-border": "@gray-lighter"
   },
   "css": [
-    "print.less",
     "type.less",
-    "grid.less",
     "forms.less",
-    "buttons.less",
-    "responsive-utilities.less",
-    "navs.less",
-    "navbar.less",
-    "alerts.less"
+    "buttons.less"
   ],
-  "js": [
-    "collapse.js"
-  ],
-  "customizerUrl": "http://getbootstrap.com/customize/?id=d4de4ee47532dc2056ff"
+  "js": [],
+  "customizerUrl": "http://getbootstrap.com/customize/?id=fb5f2231c740256312c6"
 }
