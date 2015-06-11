@@ -431,7 +431,7 @@ func validGIFURL(url string) bool {
 	return false
 }
 
-func updateSubReddit(name string) error {
+func updateSubReddit(name string, nsfw bool) error {
 	subReddit := reddit.SubReddit{Name: name}
 
 	fmt.Printf("downloading /r/%v...\n", name)
@@ -465,6 +465,10 @@ func updateSubReddit(name string) error {
 				SourceURL: sourceURL,
 				URL:       redditURL.URL,
 				CreatedAt: time.Unix(int64(redditURL.Created), 0),
+			}
+
+			if nsfw != url.NSFW {
+				continue
 			}
 
 			id, err := existsInDB(url)
@@ -501,27 +505,40 @@ func updateSubReddit(name string) error {
 }
 
 func updateRedditForever() {
-	reddits := []string{
-		// sfw
-		"gifs", "perfectloops", "noisygifs", "analogygifs",
-		"reversegif", "aww_gifs", "SlyGifs",
-		"AnimalsBeingJerks", "shittyreactiongifs", "CatGifs",
-		"Puggifs", "SpaceGifs", "physicsgifs", "educationalgifs", "shockwaveporn",
-		// nsfw
-		"gifsgonewild", "porn_gifs", "PornGifs", "NSFW_SEXY_GIF", "nsfwcelebgifs",
-		"adultgifs", "NSFW_GIF", "nsfw_gifs", "porngif", "randomsexygifs",
+	redditTypes := map[string][]string{
+		"sfw": []string{
+			"gifs", "perfectloops", "noisygifs", "analogygifs",
+			"reversegif", "aww_gifs", "SlyGifs",
+			"AnimalsBeingJerks", "shittyreactiongifs", "CatGifs",
+			"Puggifs", "SpaceGifs", "physicsgifs", "educationalgifs", "shockwaveporn",
+		},
+		"nsfw": []string{
+			"gifsgonewild", "porn_gifs", "PornGifs", "NSFW_SEXY_GIF", "nsfwcelebgifs",
+			"adultgifs", "NSFW_GIF", "nsfw_gifs", "porngif", "randomsexygifs",
+		},
 	}
 
-	for i := range reddits {
-		rand.Seed(time.Now().UnixNano())
-		j := rand.Intn(i + 1)
-		reddits[i], reddits[j] = reddits[j], reddits[i]
+	shuffle := func(s []string) {
+		for i := range s {
+			rand.Seed(time.Now().UnixNano())
+			j := rand.Intn(i + 1)
+			s[i], s[j] = s[j], s[i]
+		}
 	}
+
+	shuffle(redditTypes["sfw"])
+	shuffle(redditTypes["nsfw"])
 
 	go func() {
 		for {
-			for _, s := range reddits {
-				err := updateSubReddit(s)
+			for _, s := range redditTypes["sfw"] {
+				err := updateSubReddit(s, false)
+				if err != nil {
+					log.Println(err)
+				}
+			}
+			for _, s := range redditTypes["nsfw"] {
+				err := updateSubReddit(s, true)
 				if err != nil {
 					log.Println(err)
 				}
