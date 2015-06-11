@@ -101,6 +101,10 @@ func Gif(gifURL string) (GfyCatInformation, error) {
 	}
 
 	b, err := getJSON(fmt.Sprintf("http://gfycat.com/cajax/get/%v", gfyName))
+	if err != nil {
+		return GfyCatInformation{}, err
+	}
+
 	var j map[string]GfyCatInformation
 	err = json.Unmarshal(b, &j)
 	if err != nil {
