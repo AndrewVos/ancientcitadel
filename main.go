@@ -450,6 +450,7 @@ func updateSubReddit(name string, nsfw bool) error {
 
 			if strings.Contains(redditURL.URL, "imgur.com") && !strings.HasSuffix(redditURL.URL, ".gif") {
 				redditURL.URL = strings.TrimSuffix(redditURL.URL, ".gifv")
+				redditURL.URL = strings.TrimSuffix(redditURL.URL, ".webm")
 				redditURL.URL = redditURL.URL + ".gif"
 			}
 			if strings.Contains(redditURL.URL, "gfycat.com") && !strings.HasSuffix(redditURL.URL, ".gif") {
