@@ -213,20 +213,20 @@ func sitemapHandler(w http.ResponseWriter, r *http.Request) {
 	gzip.Write([]byte(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` + "\n"))
 	offset := 0
 	for {
-		var urls []URL
-		err = db.Select(&urls, `
-		SELECT * FROM urls
+		var ids []int
+		err = db.Select(&ids, `
+		SELECT id FROM urls
 			WHERE nsfw = $1
 			ORDER BY created_at DESC
 			OFFSET $2
-			LIMIT 50
+			LIMIT 10
 		`, false, offset)
 
-		if len(urls) == 0 {
+		if len(ids) == 0 {
 			break
 		}
-		for _, url := range urls {
-			gzip.Write([]byte(fmt.Sprintf("  <url><loc>http://ancientcitadel.com%v</loc></url>\n", url.HomeURL())))
+		for _, id := range ids {
+			gzip.Write([]byte(fmt.Sprintf("  <url><loc>http://ancientcitadel.com/gif/%v</loc></url>\n", id)))
 		}
 		offset += 1
 	}
