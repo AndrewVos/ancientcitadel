@@ -2,6 +2,7 @@ package main
 
 import (
 	"compress/gzip"
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -22,10 +23,12 @@ import (
 	"github.com/AndrewVos/ancientcitadel/gfycat"
 	"github.com/AndrewVos/ancientcitadel/reddit"
 	"github.com/AndrewVos/mig"
+	"github.com/ChimeraCoder/anaconda"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/mrjones/oauth"
 )
 
 const (
@@ -192,6 +195,121 @@ func gifHandler(w http.ResponseWriter, r *http.Request) {
 
 func mainHandler(w http.ResponseWriter, r *http.Request) {
 	genericHandler("index.html", w, r)
+}
+
+func twitterCallbackHandler(w http.ResponseWriter, r *http.Request) {
+	c := oauth.NewConsumer(
+		os.Getenv("TWITTER_CONSUMER_KEY"),
+		os.Getenv("TWITTER_CONSUMER_SECRET"),
+		oauth.ServiceProvider{
+			RequestTokenUrl:   "https://api.twitter.com/oauth/request_token",
+			AuthorizeTokenUrl: "https://api.twitter.com/oauth/authorize",
+			AccessTokenUrl:    "https://api.twitter.com/oauth/access_token",
+		})
+
+	values := r.URL.Query()
+	verificationCode := values.Get("oauth_verifier")
+	tokenKey := values.Get("oauth_token")
+
+	accessToken, err := c.AuthorizeToken(tokens[tokenKey], verificationCode)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Print(err)
+		return
+	}
+
+	expiration := time.Now().Add(365 * 24 * time.Hour)
+	http.SetCookie(w, &http.Cookie{
+		Name:    "twitter_access_token",
+		Value:   accessToken.Token,
+		Expires: expiration,
+		Path:    "/",
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:    "twitter_secret",
+		Value:   accessToken.Secret,
+		Expires: expiration,
+		Path:    "/",
+	})
+
+	w.Write([]byte("<script>window.close();</script>"))
+}
+
+var tokens = map[string]*oauth.RequestToken{}
+
+func tweetHandler(w http.ResponseWriter, r *http.Request) {
+	var twitterToken string
+	var twitterSecret string
+
+	if c, err := r.Cookie("twitter_access_token"); err == nil {
+		twitterToken = c.Value
+	}
+	if c, err := r.Cookie("twitter_secret"); err == nil {
+		twitterSecret = c.Value
+	}
+
+	c := oauth.NewConsumer(
+		os.Getenv("TWITTER_CONSUMER_KEY"),
+		os.Getenv("TWITTER_CONSUMER_SECRET"),
+		oauth.ServiceProvider{
+			RequestTokenUrl:   "https://api.twitter.com/oauth/request_token",
+			AuthorizeTokenUrl: "https://api.twitter.com/oauth/authorize",
+			AccessTokenUrl:    "https://api.twitter.com/oauth/access_token",
+		})
+
+	if twitterToken == "" || twitterSecret == "" {
+		token, requestURL, err := c.GetRequestTokenAndUrl("http://ancientcitadel.com/twitter/callback")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Print(err)
+			return
+		}
+		tokens[token.Token] = token
+		http.Redirect(w, r, requestURL, http.StatusTemporaryRedirect)
+	} else {
+		id := mux.Vars(r)["id"]
+		gif, err := getURL(id)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Print(err)
+			return
+		}
+
+		anaconda.SetConsumerKey(os.Getenv("TWITTER_CONSUMER_KEY"))
+		anaconda.SetConsumerSecret(os.Getenv("TWITTER_CONSUMER_SECRET"))
+		api := anaconda.NewTwitterApi(twitterToken, twitterSecret)
+
+		gifResponse, err := http.Get(gif.URL)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Print(err)
+			return
+		}
+		defer gifResponse.Body.Close()
+
+		b, err := ioutil.ReadAll(gifResponse.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Print(err)
+			return
+		}
+		base64Encoded := base64.StdEncoding.EncodeToString(b)
+		media, err := api.UploadMedia(base64Encoded)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Print(err)
+			return
+		}
+
+		v := url.Values{}
+		v.Set("media_ids", media.MediaIDString)
+		_, err = api.PostTweet("http://ancientcitadel.com/gif/"+id, v)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Print(err)
+			return
+		}
+	}
 }
 
 func sitemapHandler(w http.ResponseWriter, r *http.Request) {
@@ -588,6 +706,9 @@ func main() {
 	r.Handle("/{work:nsfw}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(mainHandler)))
 	r.Handle("/{work:nsfw}/{top:top}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(mainHandler)))
 	r.Handle("/gif/{id:\\d+}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(gifHandler)))
+
+	r.Handle("/tweet/{id:\\d+}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(tweetHandler)))
+	r.Handle("/twitter/callback", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(twitterCallbackHandler)))
 
 	r.Handle("/sitemap.xml.gz", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(sitemapHandler)))
 

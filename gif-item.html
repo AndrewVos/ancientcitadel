@@ -23,7 +23,9 @@
     <h1>Share this</h1>
     <p>
       <h2>
-        <a class="ios-intent" target="_blank" href="https://twitter.com/intent/tweet?source=ancientcitadel.com&text=http://ancientcitadel.com/gif/{{.ID}}" data-ios-intent="twitter://post?message=http://ancientcitadel.com/gif/{{.ID}}">on twitter</a>
+        <a class="tweet" style="display:none;" data-gif-id="{{.ID}}" href="/tweet/{{.ID}}">tweet</a>
+        <a class="login-to-twitter" data-gif-id="{{.ID}}" target="_blank" href="/tweet/{{.ID}}">login to tweet</a>
+        <p class="tweet-status" style="display: none;"></p>
       </h2>
       <h2>
         <a target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=ancientcitadel.com/gif/{{.ID}}&t={{.Title}}">on facebook</a>
