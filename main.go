@@ -218,15 +218,17 @@ func sitemapHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	offset := 0
+	limit := 1000
 	for {
 		var ids []int
+
 		err = db.Select(&ids, `
 		SELECT id FROM urls
 			WHERE nsfw = $1
 			ORDER BY created_at DESC
 			OFFSET $2
-			LIMIT 1000
-		`, false, offset)
+			LIMIT $3
+		`, false, offset, limit)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			log.Print(err)
@@ -245,7 +247,7 @@ func sitemapHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		offset += 1
+		offset += limit
 	}
 	gzip.Write([]byte("</urlset>\n"))
 }
