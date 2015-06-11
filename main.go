@@ -221,12 +221,23 @@ func sitemapHandler(w http.ResponseWriter, r *http.Request) {
 			OFFSET $2
 			LIMIT 10
 		`, false, offset)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Print(err)
+			return
+		}
 
 		if len(ids) == 0 {
 			break
 		}
+
 		for _, id := range ids {
-			gzip.Write([]byte(fmt.Sprintf("  <url><loc>http://ancientcitadel.com/gif/%v</loc></url>\n", id)))
+			_, err := gzip.Write([]byte(fmt.Sprintf("  <url><loc>http://ancientcitadel.com/gif/%v</loc></url>\n", id)))
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				log.Print(err)
+				return
+			}
 		}
 		offset += 1
 	}
