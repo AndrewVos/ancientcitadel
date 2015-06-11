@@ -87,7 +87,28 @@ func uploadGIF(gifURL string) (string, error) {
 	return uploadedGif.GfyName, nil
 }
 
+func testURL(gifURL string) (bool, error) {
+	response, err := http.Head(gifURL)
+	if err != nil {
+		return false, err
+	}
+
+	defer response.Body.Close()
+	if response.StatusCode == 404 {
+		return false, nil
+	}
+	return true, nil
+}
+
 func Gif(gifURL string) (GfyCatInformation, error) {
+	test, err := testURL(gifURL)
+	if err != nil {
+		return GfyCatInformation{}, err
+	}
+	if !test {
+		return GfyCatInformation{}, errors.New(fmt.Sprintf("%q didn't appear healthy", gifURL))
+	}
+
 	gfyName, err := gifAlreadyUploaded(gifURL)
 	if err != nil {
 		return GfyCatInformation{}, err
