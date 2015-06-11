@@ -209,8 +209,14 @@ func sitemapHandler(w http.ResponseWriter, r *http.Request) {
 	gzip := gzip.NewWriter(w)
 	defer gzip.Close()
 
-	gzip.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>` + "\n"))
-	gzip.Write([]byte(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` + "\n"))
+	_, err = gzip.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>` + "\n" +
+		`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` + "\n"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Print(err)
+		return
+	}
+
 	offset := 0
 	for {
 		var ids []int
