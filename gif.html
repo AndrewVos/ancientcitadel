@@ -4,6 +4,12 @@
     {{ template "head.html" }}
     <script src="/assets/scripts/pack.js"></script>
     <script src="/assets/scripts/gifs.js"></script>
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@ancient_citadel">
+    <meta name="twitter:creator" content="@ancient_citadel">
+    <meta name="twitter:title" content="{{.URL.Title}}">
+    <meta name="twitter:image" content="{{.URL.URL}}">
   </head>
   <body>
     {{ template "google-analytics.html" }}
