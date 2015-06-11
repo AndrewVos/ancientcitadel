@@ -10,12 +10,11 @@ $.fn.pack = function(options) {
   var container = $(this);
 
   var maximumWidth = Math.round(container.width() / options.columns);
+  maximumWidth -= options.gutter;
+  maximumWidth += (options.gutter / options.columns);
 
   container.css("position", "relative");
   container.find(options.selector).css("position", "absolute");
-
-  maximumWidth -= options.gutter;
-  maximumWidth += (options.gutter / options.columns);
 
   $(options.selector).outerWidth(maximumWidth);
 
