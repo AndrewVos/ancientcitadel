@@ -61,4 +61,5 @@ function moveGifsAround() {
     gutter: gutter(),
     selector: ".item"
   });
+  $(".items .item").fadeIn();
 }
