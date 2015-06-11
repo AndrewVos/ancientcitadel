@@ -141,10 +141,6 @@ func (u URL) ToJSON() (string, error) {
 	return string(b), nil
 }
 
-func (u URL) HomeURL() string {
-	return fmt.Sprintf("/gif/%v", u.ID)
-}
-
 func (u URL) ShareMarkdown() string {
 	return fmt.Sprintf("![%s](%s)", u.URL, u.URL)
 }
