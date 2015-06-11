@@ -219,7 +219,7 @@ func sitemapHandler(w http.ResponseWriter, r *http.Request) {
 			WHERE nsfw = $1
 			ORDER BY created_at DESC
 			OFFSET $2
-			LIMIT 10
+			LIMIT 1000
 		`, false, offset)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
