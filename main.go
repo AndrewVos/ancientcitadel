@@ -720,6 +720,7 @@ func main() {
 		"assets/styles/remodal-default-theme.css",
 	}
 	js := []string{
+		"assets/scripts/jquery.min.js",
 		"assets/scripts/remodal.min.js",
 		"assets/scripts/tweet.js",
 		"assets/scripts/navigation.js",
