@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/AndrewVos/ancientcitadel/gfycat"
-	"github.com/AndrewVos/ancientcitadel/minify"
 	"github.com/AndrewVos/ancientcitadel/reddit"
 	"github.com/AndrewVos/mig"
 	"github.com/ChimeraCoder/anaconda"
@@ -718,23 +717,17 @@ func main() {
 	flag.Parse()
 
 	r := mux.NewRouter()
-	css := []string{
-		"assets/styles/bootstrap.min.css",
-		"assets/styles/main.css",
-		"assets/styles/remodal.css",
-		"assets/styles/remodal-default-theme.css",
-	}
-	js := []string{
-		"assets/scripts/jquery.min.js",
-		"assets/scripts/remodal.min.js",
-		"assets/scripts/tweet.js",
-		"assets/scripts/navigation.js",
-		"assets/scripts/pack.js",
-		"assets/scripts/gifs.js",
-	}
 
-	addHandler("/styles/all.css", r, minify.CSSHandler(css))
-	addHandler("/scripts/all.js", r, minify.JSHandler(js))
+	cssHandler := func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/css")
+		http.ServeFile(w, r, "assets/compiled.css")
+	}
+	jsHandler := func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/javascript")
+		http.ServeFile(w, r, "assets/compiled.js")
+	}
+	addHandler("/compiled.css", r, http.HandlerFunc(cssHandler))
+	addHandler("/compiled.js", r, http.HandlerFunc(jsHandler))
 
 	addHandler("/assets/favicons/", r, http.StripPrefix("/assets/favicons/", http.FileServer(http.Dir("assets/favicons"))))
 
