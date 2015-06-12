@@ -12,4 +12,4 @@ favicon:
 
 dev:
 	go get github.com/cespare/reflex
-	reflex -g '*.go' -g 'assets/scripts/*' -g 'assets/styles/*' -s -- sh -c './dev.sh'
+	reflex -g '*.go' -g 'assets/scripts/*' -g 'assets/styles/*' -s -- sh -c './compile-assets.sh && go build && ./ancientcitadel'
