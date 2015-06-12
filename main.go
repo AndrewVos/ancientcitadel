@@ -696,6 +696,11 @@ func saveURL(url URL) error {
 	return nil
 }
 
+func addHandlerWithoutGZIP(path string, r *mux.Router, h http.Handler) {
+	h = handlers.LoggingHandler(os.Stdout, h)
+	r.Handle(path, h)
+}
+
 func addHandler(path string, r *mux.Router, h http.Handler) {
 	h = gziphandler.GzipHandler(h)
 	h = handlers.LoggingHandler(os.Stdout, h)
@@ -743,7 +748,7 @@ func main() {
 	addHandler("/tweet/{id:\\d+}", r, http.HandlerFunc(tweetHandler))
 	addHandler("/twitter/callback", r, http.HandlerFunc(twitterCallbackHandler))
 
-	addHandler("/sitemap.xml.gz", r, http.HandlerFunc(sitemapHandler))
+	addHandlerWithoutGZIP("/sitemap.xml.gz", r, http.HandlerFunc(sitemapHandler))
 
 	http.Handle("/", r)
 	fmt.Printf("Starting on port %v...\n", *port)
