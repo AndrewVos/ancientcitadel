@@ -6,7 +6,6 @@ set -u
 JS="assets/compiled.js"
 CSS="assets/compiled.css"
 
-mkdir -p compiled-assets
 rm $JS || :
 rm $CSS || :
 
