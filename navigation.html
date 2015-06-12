@@ -1,16 +1,19 @@
 <nav class="navbar">
   <ul>
-    <li class="navbar-brand"><h1><a href="/">ANCIENT CITADEL</a></h1></li>
-    <li class="{{if not .Top}}active{{end}}">
+    <li class="navbar-brand">
+      <a href="/">ANCIENT CITADEL</a>
+      <a class="navbar-show-menu" href="#">menu</a>
+    </li>
+    <li class="navbar-menu-item {{if not .Top}}active{{end}}">
       <a href="{{if .NSFW}}/nsfw{{else}}/{{end}}">new {{if not .Top}}&#10004;{{end}}</a>
     </li>
-    <li class="{{if .Top}}active{{end}}">
+    <li class="navbar-menu-item {{if .Top}}active{{end}}">
       <a href="{{if .NSFW}}/nsfw/top{{else}}/top{{end}}">top {{if .Top}}&#10004;{{end}}</a>
     </li>
-    <li class="{{if .NSFW}}active{{end}}">
+    <li class="navbar-menu-item {{if .NSFW}}active{{end}}">
       <a href="{{if .NSFW}}/{{else}}/nsfw{{end}}">adult mode {{if .NSFW}}&#10004;{{end}}</a>
     </li>
-    <li class="navbar-form">
+    <li class="navbar-menu-item navbar-form">
       <form role="search">
         <input type="hidden" name="page" value="1"></input>
         <input type="text" class="form-control" name="q" value="{{.Query}}" placeholder="wanna find something?">

@@ -37,7 +37,8 @@ function gutter() {
 }
 
 function columns() {
-  var columns = Math.round($(document).width() / 500);
+  var width = (window.innerWidth > 0) ? window.innerWidth : screen.width;
+  var columns = Math.round(width / 500);
   if (columns == 0) {
     columns = 1;
   }
