@@ -4,12 +4,10 @@ import (
 	"io"
 	"net/http"
 	"os"
-
-	"github.com/nytimes/gziphandler"
 )
 
 func handler(assetPaths []string, contentType string) http.Handler {
-	f := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", contentType)
 		for _, assetPath := range assetPaths {
 			file, err := os.Open(assetPath)
@@ -24,7 +22,6 @@ func handler(assetPaths []string, contentType string) http.Handler {
 			}
 		}
 	})
-	return gziphandler.GzipHandler(f)
 }
 
 func CSSHandler(assetPaths []string) http.Handler {

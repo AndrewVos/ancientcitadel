@@ -29,6 +29,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/mrjones/oauth"
+	"github.com/nytimes/gziphandler"
 )
 
 const (
@@ -168,6 +169,8 @@ func templates(layout string) []string {
 }
 
 func genericHandler(layout string, w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
 	template, err := template.ParseFiles(templates(layout)...)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -198,6 +201,8 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func twitterCallbackHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
 	c := oauth.NewConsumer(
 		os.Getenv("TWITTER_CONSUMER_KEY"),
 		os.Getenv("TWITTER_CONSUMER_SECRET"),
@@ -238,6 +243,8 @@ func twitterCallbackHandler(w http.ResponseWriter, r *http.Request) {
 var tokens = map[string]*oauth.RequestToken{}
 
 func tweetHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
 	var twitterToken string
 	var twitterSecret string
 
@@ -367,6 +374,8 @@ func sitemapHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func apiRandomHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	nsfw := mux.Vars(r)["work"] == "nsfw"
 
 	db, err := db()
@@ -687,6 +696,12 @@ func saveURL(url URL) error {
 	return nil
 }
 
+func addHandler(path string, r *mux.Router, h http.Handler) {
+	h = gziphandler.GzipHandler(h)
+	h = handlers.LoggingHandler(os.Stdout, h)
+	r.Handle(path, h)
+}
+
 func main() {
 	runtime.GOMAXPROCS(4)
 	err := mig.Migrate("postgres", databaseURL(), "./migrations")
@@ -712,24 +727,22 @@ func main() {
 		"assets/scripts/gifs.js",
 	}
 
-	r.Handle("/styles/all.css", handlers.LoggingHandler(os.Stdout, minify.CSSHandler(css)))
-	r.Handle("/scripts/all.js", handlers.LoggingHandler(os.Stdout, minify.JSHandler(js)))
+	addHandler("/styles/all.css", r, minify.CSSHandler(css))
+	addHandler("/scripts/all.js", r, minify.JSHandler(js))
 
-	fs := http.FileServer(http.Dir("assets/favicons"))
-	fs = handlers.LoggingHandler(os.Stdout, fs)
-	http.Handle("/assets/favicons/", http.StripPrefix("/assets/favicons/", fs))
+	addHandler("/assets/favicons/", r, http.StripPrefix("/assets/favicons/", http.FileServer(http.Dir("assets/favicons"))))
 
-	r.Handle("/api/random/{work:nsfw|sfw}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(apiRandomHandler)))
-	r.Handle("/", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(mainHandler)))
-	r.Handle("/{top:top}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(mainHandler)))
-	r.Handle("/{work:nsfw}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(mainHandler)))
-	r.Handle("/{work:nsfw}/{top:top}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(mainHandler)))
-	r.Handle("/gif/{id:\\d+}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(gifHandler)))
+	addHandler("/api/random/{work:nsfw|sfw}", r, http.HandlerFunc(apiRandomHandler))
+	addHandler("/", r, http.HandlerFunc(mainHandler))
+	addHandler("/{top:top}", r, http.HandlerFunc(mainHandler))
+	addHandler("/{work:nsfw}", r, http.HandlerFunc(mainHandler))
+	addHandler("/{work:nsfw}/{top:top}", r, http.HandlerFunc(mainHandler))
+	addHandler("/gif/{id:\\d+}", r, http.HandlerFunc(gifHandler))
 
-	r.Handle("/tweet/{id:\\d+}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(tweetHandler)))
-	r.Handle("/twitter/callback", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(twitterCallbackHandler)))
+	addHandler("/tweet/{id:\\d+}", r, http.HandlerFunc(tweetHandler))
+	addHandler("/twitter/callback", r, http.HandlerFunc(twitterCallbackHandler))
 
-	r.Handle("/sitemap.xml.gz", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(sitemapHandler)))
+	addHandler("/sitemap.xml.gz", r, http.HandlerFunc(sitemapHandler))
 
 	http.Handle("/", r)
 	fmt.Printf("Starting on port %v...\n", *port)
