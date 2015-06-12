@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -21,6 +20,7 @@ import (
 	"time"
 
 	"github.com/AndrewVos/ancientcitadel/gfycat"
+	"github.com/AndrewVos/ancientcitadel/minify"
 	"github.com/AndrewVos/ancientcitadel/reddit"
 	"github.com/AndrewVos/mig"
 	"github.com/ChimeraCoder/anaconda"
@@ -392,25 +392,6 @@ func apiRandomHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
-func serveAsset(r *mux.Router, asset string) {
-	r.HandleFunc(asset, func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, path.Join(".", asset))
-	})
-}
-
-func serveAssets(r *mux.Router) {
-	paths := []string{"styles", "scripts", "favicons"}
-	for _, assetSubDirectory := range paths {
-		files, err := ioutil.ReadDir(path.Join("assets", assetSubDirectory))
-		if err != nil {
-			log.Fatal(err)
-		}
-		for _, file := range files {
-			serveAsset(r, "/"+path.Join("assets", assetSubDirectory, file.Name()))
-		}
-	}
-}
-
 func validGIFURL(url string) bool {
 	if strings.HasSuffix(url, ".jpg") {
 		return false
@@ -717,7 +698,27 @@ func main() {
 	flag.Parse()
 
 	r := mux.NewRouter()
-	serveAssets(r)
+	css := []string{
+		"assets/styles/bootstrap.min.css",
+		"assets/styles/main.css",
+		"assets/styles/remodal.css",
+		"assets/styles/remodal-default-theme.css",
+	}
+	js := []string{
+		"assets/scripts/remodal.min.js",
+		"assets/scripts/tweet.js",
+		"assets/scripts/navigation.js",
+		"assets/scripts/pack.js",
+		"assets/scripts/gifs.js",
+	}
+
+	r.Handle("/styles/all.css", handlers.LoggingHandler(os.Stdout, minify.CSSHandler(css)))
+	r.Handle("/scripts/all.js", handlers.LoggingHandler(os.Stdout, minify.JSHandler(js)))
+
+	fs := http.FileServer(http.Dir("assets/favicons"))
+	fs = handlers.LoggingHandler(os.Stdout, fs)
+	http.Handle("/assets/favicons/", http.StripPrefix("/assets/favicons/", fs))
+
 	r.Handle("/api/random/{work:nsfw|sfw}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(apiRandomHandler)))
 	r.Handle("/", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(mainHandler)))
 	r.Handle("/{top:top}", handlers.LoggingHandler(os.Stdout, http.HandlerFunc(mainHandler)))
