@@ -7,6 +7,13 @@ $(document).on("click", ".gif", function() {
 });
 
 $(function() {
+  $(".gif").each(function() {
+    var gif = $(this);
+    gif.attr("poster", gif.data("poster"));
+  });
+});
+
+$(function() {
   moveGifsAround();
 
   $("video.gif").on("play", function() {

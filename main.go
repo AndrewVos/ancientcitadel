@@ -17,9 +17,10 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/AndrewVos/ancientcitadel/gfycat"
+	"github.com/AndrewVos/ancientcitadel/gifs"
 	"github.com/AndrewVos/ancientcitadel/reddit"
 	"github.com/AndrewVos/mig"
 	"github.com/ChimeraCoder/anaconda"
@@ -118,18 +119,18 @@ func NewPageFromRequest(w http.ResponseWriter, r *http.Request) (Page, error) {
 }
 
 type URL struct {
-	ID        int       `db:"id"`
-	CreatedAt time.Time `db:"created_at"`
-	Title     string    `db:"title"`
-	SourceURL string    `db:"source_url"`
-	URL       string    `db:"url"`
-	GfyName   string    `db:"gfy_name"`
-	WebMURL   string    `db:"webmurl"`
-	MP4URL    string    `db:"mp4url"`
-	Width     int       `db:"width"`
-	Height    int       `db:"height"`
-	NSFW      bool      `db:"nsfw"`
-	Views     int       `db:"views"`
+	ID           int       `db:"id"`
+	CreatedAt    time.Time `db:"created_at"`
+	Title        string    `db:"title"`
+	SourceURL    string    `db:"source_url"`
+	URL          string    `db:"url"`
+	WEBMURL      string    `db:"webmurl"`
+	MP4URL       string    `db:"mp4url"`
+	ThumbnailURL string    `db:"thumbnail_url"`
+	Width        int       `db:"width"`
+	Height       int       `db:"height"`
+	NSFW         bool      `db:"nsfw"`
+	Views        int       `db:"views"`
 
 	// never used, just here to appease sqlx
 	TSV   string `db:"tsv" json:"-"`
@@ -146,10 +147,6 @@ func (u URL) ToJSON() (string, error) {
 
 func (u URL) ShareMarkdown() string {
 	return fmt.Sprintf("![%s](%s)", u.URL, u.URL)
-}
-
-func (u URL) Thumbnail() string {
-	return fmt.Sprintf("http://thumbs.gfycat.com/%s-poster.jpg", u.GfyName)
 }
 
 func templates(layout string) []string {
@@ -421,6 +418,9 @@ func validGIFURL(url string) bool {
 }
 
 func updateSubReddit(name string, nsfw bool) error {
+	urlStorer := NewURLStorer()
+	defer urlStorer.Wait()
+
 	subReddit := reddit.SubReddit{Name: name}
 
 	fmt.Printf("downloading /r/%v...\n", name)
@@ -472,26 +472,57 @@ func updateSubReddit(name string, nsfw bool) error {
 				continue
 			}
 
-			information, err := gfycat.Gif(redditURL.URL)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
+			urlStorer.Upload(&url)
 
-			url.GfyName = information.GfyName
-			url.WebMURL = information.WebMURL
-			url.MP4URL = information.MP4URL
-			url.Width = information.Width
-			url.Height = information.Height
-
-			err = saveURL(url)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
 		}
-		time.Sleep(2 * time.Second)
 	}
+}
+
+type URLStorer struct {
+	urls      chan *URL
+	waitGroup sync.WaitGroup
+}
+
+func (g *URLStorer) Upload(url *URL) {
+	g.urls <- url
+}
+
+func (g *URLStorer) Wait() {
+	close(g.urls)
+	g.waitGroup.Wait()
+}
+
+func NewURLStorer() *URLStorer {
+	uploader := &URLStorer{urls: make(chan *URL)}
+
+	processors := 5
+	for i := 1; i <= processors; i++ {
+		uploader.waitGroup.Add(1)
+		go func(processor int) {
+			host := fmt.Sprintf("http://gifs%v.ancientcitadel.com", processor)
+
+			for url := range uploader.urls {
+				fmt.Printf("uploading %q to %q...\n", url.URL, host)
+				information, err := gifs.Gif(host, url.URL)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				url.WEBMURL = information.WEBMURL
+				url.MP4URL = information.MP4URL
+				url.ThumbnailURL = information.JPGURL
+				url.Width = information.Width
+				url.Height = information.Height
+				err = saveURL(url)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+			}
+			uploader.waitGroup.Done()
+		}(i)
+	}
+	return uploader
 }
 
 func updateRedditForever() {
@@ -666,7 +697,7 @@ func updateURL(id int, url URL) error {
 	return err
 }
 
-func saveURL(url URL) error {
+func saveURL(url *URL) error {
 	db, err := db()
 	if err != nil {
 		return err
@@ -674,18 +705,18 @@ func saveURL(url URL) error {
 
 	_, err = db.Exec(`
 	INSERT INTO urls (
-		created_at, title, gfy_name, nsfw, url, source_url, webmurl, mp4url, width, height
+		created_at, title, nsfw, url, source_url, webmurl, mp4url, thumbnail_url, width, height
 	) VALUES (
 		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 	)`,
 		url.CreatedAt,
 		url.Title,
-		url.GfyName,
 		url.NSFW,
 		url.URL,
 		url.SourceURL,
-		url.WebMURL,
+		url.WEBMURL,
 		url.MP4URL,
+		url.ThumbnailURL,
 		url.Width,
 		url.Height,
 	)
@@ -707,6 +738,8 @@ func addHandler(path string, r *mux.Router, h http.Handler) {
 }
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	runtime.GOMAXPROCS(4)
 	err := mig.Migrate("postgres", databaseURL(), "./migrations")
 	if err != nil {

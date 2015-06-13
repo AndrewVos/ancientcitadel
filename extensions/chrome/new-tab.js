@@ -30,15 +30,10 @@
       video.setAttribute("loop", true);
       video.setAttribute("autoplay", true);
       var webmSource = document.createElement("source");
-      webmSource.setAttribute("src", randomGif.WebMURL);
+      webmSource.setAttribute("src", randomGif.WEBMURL);
       webmSource.setAttribute("type", "video/webm");
       video.appendChild(webmSource);
       gifElement.appendChild(video);
-
-
-        // {{.Title}}
-        // <br>
-        // <a id="link" href="{{.URL}}">link</a> / <a id="source-url" href="{{.SourceURL}}">comments</a>
     }
   }
   xhr.send();
