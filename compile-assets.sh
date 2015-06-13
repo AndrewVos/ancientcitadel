@@ -23,7 +23,3 @@ cat "assets/styles/remodal-default-theme.css" >> $CSS
 
 minify --output $JS $JS
 minify --output $CSS $CSS
-
-go build
-
-exec ./ancientcitadel
