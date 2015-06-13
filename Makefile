@@ -11,5 +11,4 @@ favicon:
 	rm webicon.sh
 
 dev:
-	go get github.com/cespare/reflex
-	reflex -g '*.go' -g 'assets/scripts/*' -g 'assets/styles/*' -s -- sh -c './compile-assets.sh && go build && ./ancientcitadel'
+	./compile-assets.sh && go build && ./ancientcitadel
