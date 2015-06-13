@@ -24,6 +24,7 @@ import (
 	"github.com/AndrewVos/ancientcitadel/reddit"
 	"github.com/AndrewVos/mig"
 	"github.com/ChimeraCoder/anaconda"
+	"github.com/dustin/go-humanize"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
@@ -62,7 +63,7 @@ func NewPageFromRequest(w http.ResponseWriter, r *http.Request) (Page, error) {
 	if err != nil {
 		return Page{}, err
 	}
-	page.URLCount = fmt.Sprintf("%d", count)
+	page.URLCount = fmt.Sprintf("%s", humanize.Comma(int64(count)))
 
 	page.Query = r.URL.Query().Get("q")
 	page.Top = mux.Vars(r)["top"] == "top"
