@@ -445,15 +445,18 @@ func updateSubReddit(name string, nsfw bool) error {
 				continue
 			}
 
+			fmt.Printf("original: %v\n", redditURL.URL)
 			if strings.Contains(redditURL.URL, "imgur.com") && !strings.HasSuffix(redditURL.URL, ".gif") {
 				redditURL.URL = strings.TrimSuffix(redditURL.URL, ".gifv")
 				redditURL.URL = strings.TrimSuffix(redditURL.URL, ".webm")
+				redditURL.URL = strings.Replace(redditURL.URL, "http://imgur.com", "http://i.imgur.com", -1)
 				redditURL.URL = redditURL.URL + ".gif"
 			}
 			if strings.Contains(redditURL.URL, "gfycat.com") && !strings.HasSuffix(redditURL.URL, ".gif") {
 				redditURL.URL = strings.Replace(redditURL.URL, "http://gfycat", "http://giant.gfycat", -1)
 				redditURL.URL += ".gif"
 			}
+			fmt.Printf("modified: %v\n", redditURL.URL)
 
 			sourceURL := "https://reddit.com" + redditURL.Permalink
 
