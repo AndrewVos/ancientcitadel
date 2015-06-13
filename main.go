@@ -41,6 +41,7 @@ type Page struct {
 	URL         URL
 	CurrentPage int
 	NextPage    *url.URL
+	URLCount    string
 	Query       string
 	NSFW        bool
 	AgeVerified bool
@@ -56,6 +57,12 @@ func NewPageFromRequest(w http.ResponseWriter, r *http.Request) (Page, error) {
 	if p := r.URL.Query().Get("page"); p != "" {
 		page.CurrentPage, _ = strconv.Atoi(p)
 	}
+
+	count, err := getURLCount()
+	if err != nil {
+		return Page{}, err
+	}
+	page.URLCount = fmt.Sprintf("%d", count)
 
 	page.Query = r.URL.Query().Get("q")
 	page.Top = mux.Vars(r)["top"] == "top"
@@ -620,6 +627,16 @@ func getTopURLs(nsfw bool, page int, pageSize int) ([]URL, error) {
 		urls = append(urls, url)
 	}
 	return urls, nil
+}
+
+func getURLCount() (int, error) {
+	db, err := db()
+	if err != nil {
+		return 0, err
+	}
+	var count int
+	err = db.Get(&count, "SELECT COUNT(*) FROM urls")
+	return count, err
 }
 
 func getURLs(query string, nsfw bool, page int, pageSize int) ([]URL, error) {
