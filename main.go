@@ -486,9 +486,14 @@ func updateSubReddit(name string, nsfw bool) error {
 			}
 
 			urlStorer.Upload(&url)
-
 		}
 	}
+}
+
+type DownloadResult struct {
+	CreatedAt time.Time `db:"created_at"`
+	URL       string    `db:"url"`
+	Success   bool      `db:"success"`
 }
 
 type URLStorer struct {
@@ -515,12 +520,32 @@ func NewURLStorer() *URLStorer {
 			host := fmt.Sprintf("http://gifs%v.ancientcitadel.com", processor)
 
 			for url := range uploader.urls {
-				fmt.Printf("uploading %q to %q...\n", url.URL, host)
-				information, err := gifs.Gif(host, url.URL)
+				result, err := getDownloadResult(url.URL)
 				if err != nil {
 					log.Println(err)
 					continue
 				}
+				if result != nil && result.Success == false {
+					continue
+				}
+
+				fmt.Printf("uploading %q to %q...\n", url.URL, host)
+				information, err := gifs.Gif(host, url.URL)
+
+				if err != nil {
+					log.Println(err)
+					err := storeDownloadResult(url.URL, false)
+					if err != nil {
+						log.Println(err)
+					}
+					continue
+				}
+				err = storeDownloadResult(url.URL, true)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+
 				url.WEBMURL = information.WEBMURL
 				url.MP4URL = information.MP4URL
 				url.ThumbnailURL = information.JPGURL
@@ -588,6 +613,28 @@ func storeURLView(url URL) error {
 	}
 	_, err = db.Exec(`INSERT INTO url_views (url_id) VALUES ($1)`, url.ID)
 	return err
+}
+
+func storeDownloadResult(url string, success bool) error {
+	db, err := db()
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(`INSERT INTO download_results (url, success) VALUES ($1, $2)`, url, success)
+	return err
+}
+
+func getDownloadResult(url string) (*DownloadResult, error) {
+	db, err := db()
+	if err != nil {
+		return nil, err
+	}
+	var results []DownloadResult
+	err = db.Select(&results, `SELECT * FROM download_results WHERE url = $1 LIMIT 1`, url)
+	if len(results) == 1 {
+		return &results[0], nil
+	}
+	return nil, err
 }
 
 func getURL(id string) (URL, error) {
