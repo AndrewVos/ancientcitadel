@@ -153,6 +153,10 @@ func (u URL) ToJSON() (string, error) {
 	return string(b), nil
 }
 
+func (u URL) HumanCreatedAt() string {
+	return humanize.Time(u.CreatedAt)
+}
+
 func (u URL) ShareMarkdown() string {
 	return fmt.Sprintf("![%s](%s)", u.URL, u.URL)
 }
@@ -464,7 +468,7 @@ func updateSubReddit(name string, nsfw bool) error {
 				NSFW:      redditURL.Over18,
 				SourceURL: sourceURL,
 				URL:       redditURL.URL,
-				CreatedAt: time.Unix(int64(redditURL.Created), 0),
+				CreatedAt: time.Unix(int64(redditURL.CreatedUTC), 0),
 			}
 
 			if nsfw != url.NSFW {

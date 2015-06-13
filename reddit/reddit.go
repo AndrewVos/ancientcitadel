@@ -40,11 +40,11 @@ func (sr *SubReddit) NextPage() ([]RedditURL, error) {
 	var urls []RedditURL
 	for _, child := range redditResponse.Data.Children {
 		urls = append(urls, RedditURL{
-			Title:     child.Data.Title,
-			URL:       child.Data.URL,
-			Permalink: child.Data.Permalink,
-			Created:   child.Data.Created,
-			Over18:    child.Data.Over18,
+			Title:      child.Data.Title,
+			URL:        child.Data.URL,
+			Permalink:  child.Data.Permalink,
+			CreatedUTC: child.Data.CreatedUTC,
+			Over18:     child.Data.Over18,
 		})
 	}
 	sr.after = redditResponse.Data.After
@@ -69,17 +69,17 @@ type redditResponseChild struct {
 }
 
 type redditResponseChildData struct {
-	Permalink string
-	Title     string
-	URL       string
-	Created   float64
-	Over18    bool `json:"over_18"`
+	Permalink  string
+	Title      string
+	URL        string
+	CreatedUTC float64 `json:"created_utc"`
+	Over18     bool    `json:"over_18"`
 }
 
 type RedditURL struct {
-	Title     string
-	URL       string
-	Permalink string
-	Created   float64
-	Over18    bool
+	Title      string
+	URL        string
+	Permalink  string
+	CreatedUTC float64
+	Over18     bool
 }
