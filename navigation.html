@@ -17,7 +17,7 @@
       <a href="{{if .NSFW}}/{{else}}/nsfw{{end}}">adult mode {{if .NSFW}}&#10004;{{end}}</a>
     </li>
     <li class="navbar-menu-item navbar-form">
-      <form role="search">
+      <form role="search" action="/{{if .NSFW}}nsfw{{end}}">
         <input type="hidden" name="page" value="1"></input>
         <input type="text" class="form-control" name="q" value="{{.Query}}" placeholder="wanna find something?">
         <input class="btn btn-default" type="submit" class="btn btn-default" value="brace thineself">
