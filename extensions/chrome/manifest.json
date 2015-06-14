@@ -3,11 +3,15 @@
 
   "name": "AncientCitadel",
   "description": "Show a random gif on your new tab page.",
-  "version": "0.4",
+  "version": "0.5",
   "permissions": [
     "http://ancientcitadel.com/"
   ],
   "chrome_url_overrides" : {
 	  "newtab": "new-tab.html"
+  },
+  "icons": {
+    "48": "icon48.png",
+    "128": "icon128.png"
   }
 }
