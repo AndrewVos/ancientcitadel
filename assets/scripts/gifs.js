@@ -1,11 +1,3 @@
-$(document).on("click", ".gif", function() {
-  if (this.paused == true) {
-    this.play();
-  } else {
-    this.pause();
-  }
-});
-
 $(function() {
   moveGifsAround();
 
@@ -62,4 +54,6 @@ function moveGifsAround() {
     gutter: gutter(),
     selector: ".item"
   });
+
+  $("video").playButton();
 }

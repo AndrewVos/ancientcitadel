@@ -1,0 +1,16 @@
+div.play-button {
+  position: absolute;
+  cursor: pointer;
+  text-align: center;
+  font-size: 7em;
+  color: white;
+  opacity: 0.5;
+
+  /* http://stackoverflow.com/questions/826782/css-rule-to-disable-text-selection-highlighting */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
