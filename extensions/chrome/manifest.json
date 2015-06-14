@@ -3,7 +3,7 @@
 
   "name": "AncientCitadel",
   "description": "Show a random gif on your new tab page.",
-  "version": "0.3",
+  "version": "0.4",
   "permissions": [
     "http://ancientcitadel.com/"
   ],
