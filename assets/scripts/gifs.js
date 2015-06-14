@@ -1,14 +1,13 @@
-$(document).on("click", ".gif", function() {
-  if (this.paused == true) {
-    this.play();
-  } else {
-    this.pause();
-  }
-});
+// $(document).on("click", ".gif", function() {
+//   if (this.paused == true) {
+//     this.play();
+//   } else {
+//     this.pause();
+//   }
+// });
 
 $(function() {
   moveGifsAround();
-
   $("video.gif").on("play", function() {
     var $video = $(this);
     var elm = $video[0];
@@ -62,4 +61,5 @@ function moveGifsAround() {
     gutter: gutter(),
     selector: ".item"
   });
+  $("video").playButton();
 }
