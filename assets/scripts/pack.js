@@ -48,5 +48,4 @@ $.fn.pack = function(options) {
     }
   }
   container.css("height", longestBottom+"px");
-}
-
+};
