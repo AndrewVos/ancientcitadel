@@ -498,7 +498,6 @@ var s=o*(n+e.gutter)
 t.css("left",s+"px")})
 var o=0
 for(i=0;i<r.length;i++)r[i]>o&&(o=r[i])
-t.css("height",o+"px")},$(document).on("click",".gif",function(){1==this.paused?this.play():this.pause()}),$(function(){$(".gif").each(function(){var e=$(this)
-e.attr("poster",e.data("poster"))})}),$(function(){moveGifsAround(),$("video.gif").on("play",function(){var e=$(this),t=e[0],n=function(){var r=t.currentTime/t.duration
+t.css("height",o+"px")},$(document).on("click",".gif",function(){1==this.paused?this.play():this.pause()}),$(function(){moveGifsAround(),$("video.gif").on("play",function(){var e=$(this),t=e[0],n=function(){var r=t.currentTime/t.duration
 r=Math.round(100*r)+1,r=Math.min(r,100),e.parent().find(".video-progress-inner").css("width",r+"%"),0==t.paused&&setTimeout(n,10)}
 setTimeout(n,10)}),$(window).resize(moveGifsAround)})
