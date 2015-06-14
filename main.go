@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/AndrewVos/ancientcitadel/assethandler"
 	"github.com/AndrewVos/ancientcitadel/gifs"
 	"github.com/AndrewVos/ancientcitadel/reddit"
 	"github.com/AndrewVos/mig"
@@ -870,16 +871,25 @@ func main() {
 
 	r := mux.NewRouter()
 
-	cssHandler := func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/css")
-		http.ServeFile(w, r, "assets/compiled.css")
-	}
-	jsHandler := func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/javascript")
-		http.ServeFile(w, r, "assets/compiled.js")
-	}
-	addHandler("/compiled.css", r, http.HandlerFunc(cssHandler))
-	addHandler("/compiled.js", r, http.HandlerFunc(jsHandler))
+	jsHandler := assethandler.JS([]string{
+		"assets/scripts/jquery.min.js",
+		"assets/scripts/remodal.min.js",
+		"assets/scripts/tweet.js",
+		"assets/scripts/navigation.js",
+		"assets/scripts/play-button.js",
+		"assets/scripts/pack.js",
+		"assets/scripts/gifs.js",
+	})
+	addHandler("/compiled.js", r, jsHandler)
+
+	cssHandler := assethandler.CSS([]string{
+		"assets/styles/bootstrap.min.css",
+		"assets/styles/remodal.css",
+		"assets/styles/remodal-default-theme.css",
+		"assets/styles/main.css",
+		"assets/styles/play-button.css",
+	})
+	addHandler("/compiled.css", r, cssHandler)
 
 	addHandler("/assets/favicons/{icon}", r, http.StripPrefix("/assets/favicons/", http.FileServer(http.Dir("./assets/favicons/"))))
 
