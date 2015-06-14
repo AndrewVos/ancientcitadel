@@ -381,6 +381,52 @@ func sitemapHandler(w http.ResponseWriter, r *http.Request) {
 	gzip.Write([]byte("</urlset>\n"))
 }
 
+func apiFeedHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	nsfw := mux.Vars(r)["work"] == "nsfw"
+	order := mux.Vars(r)["order"]
+	page := 1
+	if p := r.URL.Query().Get("page"); p != "" {
+		page, _ = strconv.Atoi(p)
+	}
+
+	type JSONError struct {
+		Error string `json:"error"`
+	}
+
+	var err error
+	var urls []URL
+
+	if order == "new" {
+		urls, err = getURLs("", nsfw, page, PageSize)
+	} else if order == "top" {
+		urls, err = getTopURLs(nsfw, page, PageSize)
+	}
+	if err != nil {
+		b, _ := json.Marshal(JSONError{Error: err.Error()})
+		w.Write(b)
+		return
+	}
+
+	if len(urls) == 0 {
+		urls = []URL{}
+	}
+
+	b, err := json.Marshal(urls)
+	if err != nil {
+		b, _ := json.Marshal(JSONError{Error: err.Error()})
+		w.Write(b)
+		return
+	}
+
+	_, err = w.Write(b)
+	if err != nil {
+		b, _ := json.Marshal(JSONError{Error: err.Error()})
+		w.Write(b)
+		return
+	}
+}
+
 func apiRandomHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -836,6 +882,9 @@ func main() {
 	addHandler("/assets/favicons/{icon}", r, http.StripPrefix("/assets/favicons/", http.FileServer(http.Dir("./assets/favicons/"))))
 
 	addHandler("/api/random/{work:nsfw|sfw}", r, http.HandlerFunc(apiRandomHandler))
+
+	addHandler("/api/{work:nsfw|sfw}/{order:new|top}", r, http.HandlerFunc(apiFeedHandler))
+
 	addHandler("/", r, http.HandlerFunc(mainHandler))
 	addHandler("/{top:top}", r, http.HandlerFunc(mainHandler))
 	addHandler("/{work:nsfw}", r, http.HandlerFunc(mainHandler))
