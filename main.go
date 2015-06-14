@@ -42,12 +42,14 @@ type Page struct {
 	URLs        []URL
 	URL         URL
 	CurrentPage int
-	NextPage    *url.URL
+	NextPage    string
 	URLCount    string
 	Query       string
 	NSFW        bool
 	AgeVerified bool
+	New         bool
 	Top         bool
+	Shuffle     bool
 }
 
 func (p Page) RequiresAgeVerification() bool {
@@ -68,6 +70,9 @@ func NewPageFromRequest(w http.ResponseWriter, r *http.Request) (Page, error) {
 
 	page.Query = r.URL.Query().Get("q")
 	page.Top = mux.Vars(r)["top"] == "top"
+	page.Shuffle = mux.Vars(r)["shuffle"] == "shuffle"
+	page.New = !(page.Top || page.Shuffle)
+
 	page.NSFW = mux.Vars(r)["work"] == "nsfw"
 
 	id := mux.Vars(r)["id"]
@@ -88,6 +93,12 @@ func NewPageFromRequest(w http.ResponseWriter, r *http.Request) (Page, error) {
 			return Page{}, err
 		}
 		page.URLs = urls
+	} else if page.Shuffle {
+		urls, err := getShuffledURLs(page.NSFW, page.CurrentPage, PageSize)
+		if err != nil {
+			return Page{}, err
+		}
+		page.URLs = urls
 	} else {
 		urls, err := getURLs(page.Query, page.NSFW, page.CurrentPage, PageSize)
 		if err != nil {
@@ -96,13 +107,9 @@ func NewPageFromRequest(w http.ResponseWriter, r *http.Request) (Page, error) {
 		page.URLs = urls
 	}
 
-	page.NextPage, _ = url.Parse("")
-	q := page.NextPage.Query()
-	if page.Query != "" {
-		q.Set("q", page.Query)
-	}
+	q := r.URL.Query()
 	q.Set("page", fmt.Sprintf("%v", page.CurrentPage+1))
-	page.NextPage.RawQuery = q.Encode()
+	page.NextPage = "?" + q.Encode()
 
 	if r.Method == "POST" {
 		r.ParseForm()
@@ -142,8 +149,9 @@ type URL struct {
 	Views        int       `db:"views"`
 
 	// never used, just here to appease sqlx
-	TSV   string `db:"tsv" json:"-"`
-	Query string `db:"query" json:"-"`
+	TSV    string  `db:"tsv" json:"-"`
+	Query  string  `db:"query" json:"-"`
+	Random float64 `db:"random" json:"-"`
 }
 
 func (u URL) ToJSON() (string, error) {
@@ -701,9 +709,8 @@ func getTopURLs(nsfw bool, page int, pageSize int) ([]URL, error) {
 		return nil, err
 	}
 
-	var rows *sqlx.Rows
-
-	rows, err = db.Queryx(`
+	var urls []URL
+	err = db.Select(&urls, `
 		SELECT urls.*,
 			COUNT(url_views.created_at) AS views
 			FROM urls
@@ -715,19 +722,7 @@ func getTopURLs(nsfw bool, page int, pageSize int) ([]URL, error) {
 		`,
 		nsfw, pageSize, (page-1)*pageSize)
 
-	if err != nil {
-		return nil, err
-	}
-	var urls []URL
-	for rows.Next() {
-		var url URL
-		err := rows.StructScan(&url)
-		if err != nil {
-			return nil, err
-		}
-		urls = append(urls, url)
-	}
-	return urls, nil
+	return urls, err
 }
 
 func getURLCount() (int, error) {
@@ -740,19 +735,37 @@ func getURLCount() (int, error) {
 	return count, err
 }
 
+func getShuffledURLs(nsfw bool, page int, pageSize int) ([]URL, error) {
+	db, err := db()
+	if err != nil {
+		return nil, err
+	}
+
+	var urls []URL
+	err = db.Select(&urls, `
+		SELECT * FROM urls
+			WHERE nsfw = $1
+			ORDER BY random(), id
+			LIMIT $2 OFFSET $3`,
+		nsfw, pageSize, (page-1)*pageSize)
+
+	return urls, err
+}
+
 func getURLs(query string, nsfw bool, page int, pageSize int) ([]URL, error) {
 	db, err := db()
 	if err != nil {
 		return nil, err
 	}
 
-	var rows *sqlx.Rows
+	var urls []URL
+
 	if query != "" {
 		wordFinder := regexp.MustCompile("\\w+")
 		queryParts := wordFinder.FindAllString(query, -1)
 		tSearchQuery := strings.Join(queryParts, "&")
 
-		rows, err = db.Queryx(`
+		err = db.Select(&urls, `
 	SELECT * FROM urls,
 		to_tsquery('pg_catalog.english', $1) AS query
 		WHERE nsfw=$2
@@ -763,7 +776,7 @@ func getURLs(query string, nsfw bool, page int, pageSize int) ([]URL, error) {
 		LIMIT $3 OFFSET $4`,
 			tSearchQuery, nsfw, pageSize, (page-1)*pageSize)
 	} else {
-		rows, err = db.Queryx(`
+		err = db.Select(&urls, `
 	SELECT * FROM urls
 		WHERE nsfw = $1
 		ORDER BY created_at DESC
@@ -771,19 +784,7 @@ func getURLs(query string, nsfw bool, page int, pageSize int) ([]URL, error) {
 			nsfw, pageSize, (page-1)*pageSize)
 	}
 
-	if err != nil {
-		return nil, err
-	}
-	var urls []URL
-	for rows.Next() {
-		var url URL
-		err := rows.StructScan(&url)
-		if err != nil {
-			return nil, err
-		}
-		urls = append(urls, url)
-	}
-	return urls, nil
+	return urls, err
 }
 
 func existsInDB(url URL) (int, error) {
@@ -899,8 +900,12 @@ func main() {
 
 	addHandler("/", r, http.HandlerFunc(mainHandler))
 	addHandler("/{top:top}", r, http.HandlerFunc(mainHandler))
+	addHandler("/{shuffle:shuffle}", r, http.HandlerFunc(mainHandler))
+
 	addHandler("/{work:nsfw}", r, http.HandlerFunc(mainHandler))
 	addHandler("/{work:nsfw}/{top:top}", r, http.HandlerFunc(mainHandler))
+	addHandler("/{work:nsfw}/{shuffle:shuffle}", r, http.HandlerFunc(mainHandler))
+
 	addHandler("/gif/{id:\\d+}", r, http.HandlerFunc(gifHandler))
 
 	addHandler("/tweet/{id:\\d+}", r, http.HandlerFunc(tweetHandler))
