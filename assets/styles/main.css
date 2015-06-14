@@ -95,16 +95,6 @@ a:visited {
   margin-bottom: 0;
 }
 
-.video-progress {
-  height: 2px;
-}
-
-.video-progress-inner {
-  height: 2px;
-  width: 0;
-  background: black;
-}
-
 .item .item-top p {
   margin-bottom: 0;
 }

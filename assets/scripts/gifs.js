@@ -1,33 +1,24 @@
-$(document).on("click", ".gif", function() {
-  if (this.paused == true) {
-    this.play();
-  } else {
-    this.pause();
-  }
-});
-
 $(function() {
   moveGifsAround();
-
-  $("video.gif").on("play", function() {
-    var $video = $(this);
-    var elm = $video[0];
-
-    var updateProgress = function() {
-      var percentage = elm.currentTime / elm.duration;
-      percentage = Math.round(percentage * 100) + 1;
-      percentage = Math.min(percentage, 100);
-      $video
-        .parent()
-        .find(".video-progress-inner")
-        .css("width", percentage+"%");
-      if (elm.paused == false) {
-        setTimeout(updateProgress, 10);
-      }
-    };
-
-    setTimeout(updateProgress, 10);
+  plyr.setup({
+    onSetup: moveGifsAround,
+    controls: ["restart", "play", "current-time", "fullscreen"],
+    click: true,
   });
+  moveGifsAround();
+
+  (function(d,p){
+    var a=new XMLHttpRequest(),
+    b=d.body;
+    a.open("GET",p,!0);
+    a.send();
+    a.onload=function(){
+      var c=d.createElement("div");
+      c.style.display="none";
+      c.innerHTML=a.responseText;
+      b.insertBefore(c,b.childNodes[0])
+    }
+  })(document,"/assets/images/plyr-sprite.svg");
 
   $(window).resize(moveGifsAround);
 });
@@ -37,8 +28,8 @@ function gutter() {
 }
 
 function columns() {
-  var width = (window.innerWidth > 0) ? window.innerWidth : screen.width;
-  var columns = Math.round(width / 500);
+  var width = $(window).width();
+  var columns = Math.round(width / 350);
   if (columns == 0) {
     columns = 1;
   }

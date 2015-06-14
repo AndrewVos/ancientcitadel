@@ -882,6 +882,7 @@ func main() {
 	addHandler("/compiled.js", r, http.HandlerFunc(jsHandler))
 
 	addHandler("/assets/favicons/{icon}", r, http.StripPrefix("/assets/favicons/", http.FileServer(http.Dir("./assets/favicons/"))))
+	addHandler("/assets/images/{image}", r, http.StripPrefix("/assets/images/", http.FileServer(http.Dir("./assets/images/"))))
 
 	addHandler("/api/random/{work:nsfw|sfw}", r, http.HandlerFunc(apiRandomHandler))
 
