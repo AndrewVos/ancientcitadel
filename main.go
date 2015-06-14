@@ -756,7 +756,9 @@ func getURLs(query string, nsfw bool, page int, pageSize int) ([]URL, error) {
 		to_tsquery('pg_catalog.english', $1) AS query
 		WHERE nsfw=$2
 		AND (tsv @@ query)
-		ORDER BY ts_rank_cd(tsv, query) DESC
+		ORDER BY
+			ts_rank_cd(tsv, query) DESC,
+			id
 		LIMIT $3 OFFSET $4`,
 			tSearchQuery, nsfw, pageSize, (page-1)*pageSize)
 	} else {
