@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -21,17 +20,15 @@ import (
 	"time"
 
 	"github.com/AndrewVos/ancientcitadel/assethandler"
+	"github.com/AndrewVos/ancientcitadel/db"
 	"github.com/AndrewVos/ancientcitadel/gifs"
 	"github.com/AndrewVos/ancientcitadel/reddit"
 	"github.com/AndrewVos/ancientcitadel/slug"
-	"github.com/AndrewVos/mig"
 	"github.com/ChimeraCoder/anaconda"
 	"github.com/dustin/go-humanize"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"github.com/jmoiron/sqlx"
 	"github.com/justinas/alice"
-	_ "github.com/lib/pq"
 	"github.com/mrjones/oauth"
 	"github.com/nytimes/gziphandler"
 )
@@ -41,8 +38,8 @@ const (
 )
 
 type Page struct {
-	URLs        []URL
-	URL         URL
+	URLs        []db.URL
+	URL         db.URL
 	CurrentPage int
 	NextPage    string
 	URLCount    string
@@ -64,7 +61,7 @@ func NewPageFromRequest(w http.ResponseWriter, r *http.Request) (Page, error) {
 		page.CurrentPage, _ = strconv.Atoi(p)
 	}
 
-	count, err := getURLCount()
+	count, err := db.GetURLCount()
 	if err != nil {
 		return Page{}, err
 	}
@@ -84,30 +81,30 @@ func NewPageFromRequest(w http.ResponseWriter, r *http.Request) (Page, error) {
 	}
 
 	if id != 0 {
-		url, err := getURL(id)
+		url, err := db.GetURL(id)
 		if err != nil {
 			return Page{}, err
 		}
 		page.URL = url
 		page.NSFW = url.NSFW
-		err = storeURLView(url)
+		err = db.StoreURLView(url)
 		if err != nil {
 			return Page{}, err
 		}
 	} else if page.Top {
-		urls, err := getTopURLs(page.NSFW, page.CurrentPage, PageSize)
+		urls, err := db.GetTopURLs(page.NSFW, page.CurrentPage, PageSize)
 		if err != nil {
 			return Page{}, err
 		}
 		page.URLs = urls
 	} else if page.Shuffle {
-		urls, err := getShuffledURLs(page.NSFW, page.CurrentPage, PageSize)
+		urls, err := db.GetShuffledURLs(page.NSFW, page.CurrentPage, PageSize)
 		if err != nil {
 			return Page{}, err
 		}
 		page.URLs = urls
 	} else {
-		urls, err := getURLs(page.Query, page.NSFW, page.CurrentPage, PageSize)
+		urls, err := db.GetURLs(page.Query, page.NSFW, page.CurrentPage, PageSize)
 		if err != nil {
 			return Page{}, err
 		}
@@ -139,47 +136,6 @@ func NewPageFromRequest(w http.ResponseWriter, r *http.Request) (Page, error) {
 	}
 
 	return page, nil
-}
-
-type URL struct {
-	ID           int       `db:"id"`
-	CreatedAt    time.Time `db:"created_at"`
-	Title        string    `db:"title"`
-	SourceURL    string    `db:"source_url"`
-	URL          string    `db:"url"`
-	WEBMURL      string    `db:"webmurl"`
-	MP4URL       string    `db:"mp4url"`
-	ThumbnailURL string    `db:"thumbnail_url"`
-	Width        int       `db:"width"`
-	Height       int       `db:"height"`
-	NSFW         bool      `db:"nsfw"`
-	Views        int       `db:"views"`
-
-	// never used, just here to appease sqlx
-	TSV    string  `db:"tsv" json:"-"`
-	Query  string  `db:"query" json:"-"`
-	Random float64 `db:"random" json:"-"`
-}
-
-func (u URL) ToJSON() (string, error) {
-	b, err := json.MarshalIndent(u, " ", "")
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
-}
-
-func (u URL) Permalink() string {
-	slug := slug.Slug(u.ID, u.Title)
-	return fmt.Sprintf("/gif/%v", slug)
-}
-
-func (u URL) HumanCreatedAt() string {
-	return humanize.Time(u.CreatedAt)
-}
-
-func (u URL) ShareMarkdown() string {
-	return fmt.Sprintf("![%s](%s)", u.URL, u.URL)
 }
 
 func templates(layout string) []string {
@@ -312,7 +268,7 @@ func tweetHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		gif, err := getURL(id)
+		gif, err := db.GetURL(id)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			log.Print(err)
@@ -357,17 +313,10 @@ func tweetHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func sitemapHandler(w http.ResponseWriter, r *http.Request) {
-	db, err := db()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Print(err)
-		return
-	}
-
 	gzip := gzip.NewWriter(w)
 	defer gzip.Close()
 
-	_, err = gzip.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>` + "\n" +
+	_, err := gzip.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>` + "\n" +
 		`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` + "\n"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -375,37 +324,30 @@ func sitemapHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	offset := 0
-	limit := 1000
+	page := 1
 	for {
-		var ids []int
+		var urls []db.URL
 
-		err = db.Select(&ids, `
-		SELECT id FROM urls
-			WHERE nsfw = $1
-			ORDER BY created_at DESC
-			OFFSET $2
-			LIMIT $3
-		`, false, offset, limit)
+		urls, err := db.GetURLs("", false, page, 1000)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			log.Print(err)
 			return
 		}
 
-		if len(ids) == 0 {
+		if len(urls) == 0 {
 			break
 		}
 
-		for _, id := range ids {
-			_, err := gzip.Write([]byte(fmt.Sprintf("  <url><loc>http://ancientcitadel.com/gif/%v</loc></url>\n", id)))
+		for _, url := range urls {
+			_, err := gzip.Write([]byte(fmt.Sprintf("  <url><loc>http://ancientcitadel.com%v</loc></url>\n", url.Permalink())))
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				log.Print(err)
 				return
 			}
 		}
-		offset += limit
+		page += 1
 	}
 	gzip.Write([]byte("</urlset>\n"))
 }
@@ -424,12 +366,12 @@ func apiFeedHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var err error
-	var urls []URL
+	var urls []db.URL
 
 	if order == "new" {
-		urls, err = getURLs("", nsfw, page, PageSize)
+		urls, err = db.GetURLs("", nsfw, page, PageSize)
 	} else if order == "top" {
-		urls, err = getTopURLs(nsfw, page, PageSize)
+		urls, err = db.GetTopURLs(nsfw, page, PageSize)
 	}
 	if err != nil {
 		b, _ := json.Marshal(JSONError{Error: err.Error()})
@@ -438,7 +380,7 @@ func apiFeedHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(urls) == 0 {
-		urls = []URL{}
+		urls = []db.URL{}
 	}
 
 	b, err := json.Marshal(urls)
@@ -461,14 +403,7 @@ func apiRandomHandler(w http.ResponseWriter, r *http.Request) {
 
 	nsfw := mux.Vars(r)["work"] == "nsfw"
 
-	db, err := db()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Print(err)
-		return
-	}
-	var url URL
-	err = db.Get(&url, "SELECT * FROM urls WHERE nsfw=$1 ORDER BY random() LIMIT 1", nsfw)
+	url, err := db.GetRandomURL(nsfw)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Print(err)
@@ -538,7 +473,7 @@ func updateSubReddit(name string, nsfw bool) error {
 
 			sourceURL := "https://reddit.com" + redditURL.Permalink
 
-			url := URL{
+			url := db.URL{
 				Title:     redditURL.Title,
 				NSFW:      redditURL.Over18,
 				SourceURL: sourceURL,
@@ -550,14 +485,14 @@ func updateSubReddit(name string, nsfw bool) error {
 				continue
 			}
 
-			id, err := existsInDB(url)
+			id, err := db.ExistsInDB(url)
 			if err != nil {
 				log.Println(err)
 				continue
 			}
 
 			if id != 0 {
-				updateURL(id, url)
+				db.UpdateURL(id, url)
 				continue
 			}
 
@@ -566,18 +501,12 @@ func updateSubReddit(name string, nsfw bool) error {
 	}
 }
 
-type DownloadResult struct {
-	CreatedAt time.Time `db:"created_at"`
-	URL       string    `db:"url"`
-	Success   bool      `db:"success"`
-}
-
 type URLStorer struct {
-	urls      chan *URL
+	urls      chan *db.URL
 	waitGroup sync.WaitGroup
 }
 
-func (g *URLStorer) Upload(url *URL) {
+func (g *URLStorer) Upload(url *db.URL) {
 	g.urls <- url
 }
 
@@ -587,7 +516,7 @@ func (g *URLStorer) Wait() {
 }
 
 func NewURLStorer() *URLStorer {
-	uploader := &URLStorer{urls: make(chan *URL)}
+	uploader := &URLStorer{urls: make(chan *db.URL)}
 
 	processors := 5
 	for i := 1; i <= processors; i++ {
@@ -596,7 +525,7 @@ func NewURLStorer() *URLStorer {
 			host := fmt.Sprintf("http://gifs%v.ancientcitadel.com", processor)
 
 			for url := range uploader.urls {
-				result, err := getDownloadResult(url.URL)
+				result, err := db.GetDownloadResult(url.URL)
 				if err != nil {
 					log.Println(err)
 					continue
@@ -610,13 +539,13 @@ func NewURLStorer() *URLStorer {
 
 				if err != nil {
 					log.Println(err)
-					err := storeDownloadResult(url.URL, false)
+					err := db.StoreDownloadResult(url.URL, false)
 					if err != nil {
 						log.Println(err)
 					}
 					continue
 				}
-				err = storeDownloadResult(url.URL, true)
+				err = db.StoreDownloadResult(url.URL, true)
 				if err != nil {
 					log.Println(err)
 					continue
@@ -627,7 +556,7 @@ func NewURLStorer() *URLStorer {
 				url.ThumbnailURL = information.JPGURL
 				url.Width = information.Width
 				url.Height = information.Height
-				err = saveURL(url)
+				err = db.SaveURL(url)
 				if err != nil {
 					log.Println(err)
 					continue
@@ -682,191 +611,6 @@ func updateRedditForever() {
 	}()
 }
 
-func storeURLView(url URL) error {
-	db, err := db()
-	if err != nil {
-		return err
-	}
-	_, err = db.Exec(`INSERT INTO url_views (url_id) VALUES ($1)`, url.ID)
-	return err
-}
-
-func storeDownloadResult(url string, success bool) error {
-	db, err := db()
-	if err != nil {
-		return err
-	}
-	_, err = db.Exec(`INSERT INTO download_results (url, success) VALUES ($1, $2)`, url, success)
-	return err
-}
-
-func getDownloadResult(url string) (*DownloadResult, error) {
-	db, err := db()
-	if err != nil {
-		return nil, err
-	}
-	var results []DownloadResult
-	err = db.Select(&results, `SELECT * FROM download_results WHERE url = $1 LIMIT 1`, url)
-	if len(results) == 1 {
-		return &results[0], nil
-	}
-	return nil, err
-}
-
-func getURL(id int) (URL, error) {
-	db, err := db()
-	if err != nil {
-		return URL{}, err
-	}
-	var url URL
-	err = db.Get(&url, `SELECT * FROM urls WHERE id = $1 LIMIT 1`, id)
-	return url, err
-}
-
-func getTopURLs(nsfw bool, page int, pageSize int) ([]URL, error) {
-	db, err := db()
-	if err != nil {
-		return nil, err
-	}
-
-	var urls []URL
-	err = db.Select(&urls, `
-		SELECT urls.*,
-			COUNT(url_views.created_at) AS views
-			FROM urls
-			INNER JOIN url_views on url_views.url_id = urls.id
-			WHERE nsfw = $1
-			GROUP BY urls.id
-			ORDER BY views DESC
-			LIMIT $2 OFFSET $3
-		`,
-		nsfw, pageSize, (page-1)*pageSize)
-
-	return urls, err
-}
-
-func getURLCount() (int, error) {
-	db, err := db()
-	if err != nil {
-		return 0, err
-	}
-	var count int
-	err = db.Get(&count, "SELECT COUNT(*) FROM urls")
-	return count, err
-}
-
-func getShuffledURLs(nsfw bool, page int, pageSize int) ([]URL, error) {
-	db, err := db()
-	if err != nil {
-		return nil, err
-	}
-
-	var urls []URL
-	err = db.Select(&urls, `
-		SELECT * FROM urls
-			WHERE nsfw = $1
-			ORDER BY random(), id
-			LIMIT $2 OFFSET $3`,
-		nsfw, pageSize, (page-1)*pageSize)
-
-	return urls, err
-}
-
-func getURLs(query string, nsfw bool, page int, pageSize int) ([]URL, error) {
-	db, err := db()
-	if err != nil {
-		return nil, err
-	}
-
-	var urls []URL
-
-	if query != "" {
-		wordFinder := regexp.MustCompile("\\w+")
-		queryParts := wordFinder.FindAllString(query, -1)
-		tSearchQuery := strings.Join(queryParts, "&")
-
-		err = db.Select(&urls, `
-	SELECT * FROM urls,
-		to_tsquery('pg_catalog.english', $1) AS query
-		WHERE nsfw=$2
-		AND (tsv @@ query)
-		ORDER BY
-			ts_rank_cd(tsv, query) DESC,
-			id
-		LIMIT $3 OFFSET $4`,
-			tSearchQuery, nsfw, pageSize, (page-1)*pageSize)
-	} else {
-		err = db.Select(&urls, `
-	SELECT * FROM urls
-		WHERE nsfw = $1
-		ORDER BY created_at DESC
-		LIMIT $2 OFFSET $3`,
-			nsfw, pageSize, (page-1)*pageSize)
-	}
-
-	return urls, err
-}
-
-func existsInDB(url URL) (int, error) {
-	db, err := db()
-	if err != nil {
-		return 0, err
-	}
-
-	var ids []int
-	err = db.Select(&ids, "SELECT id FROM urls WHERE url = $1 OR source_url = $2 LIMIT 1;", url.URL, url.SourceURL)
-
-	if err != nil {
-		return 0, err
-	}
-
-	if len(ids) == 1 {
-		return ids[0], nil
-	}
-	return 0, nil
-}
-
-func updateURL(id int, url URL) error {
-	db, err := db()
-	if err != nil {
-		return err
-	}
-	_, err = db.Exec(`UPDATE urls SET nsfw = $1 WHERE id = $2`,
-		url.NSFW,
-		id,
-	)
-	return err
-}
-
-func saveURL(url *URL) error {
-	db, err := db()
-	if err != nil {
-		return err
-	}
-
-	_, err = db.Exec(`
-	INSERT INTO urls (
-		created_at, title, nsfw, url, source_url, webmurl, mp4url, thumbnail_url, width, height
-	) VALUES (
-		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-	)`,
-		url.CreatedAt,
-		url.Title,
-		url.NSFW,
-		url.URL,
-		url.SourceURL,
-		url.WEBMURL,
-		url.MP4URL,
-		url.ThumbnailURL,
-		url.Width,
-		url.Height,
-	)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func loggingHandler(next http.Handler) http.Handler {
 	return handlers.LoggingHandler(os.Stdout, next)
 }
@@ -875,7 +619,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	runtime.GOMAXPROCS(4)
-	err := mig.Migrate("postgres", databaseURL(), "./migrations")
+	err := db.Migrate()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -942,24 +686,4 @@ func main() {
 	updateRedditForever()
 	err = http.ListenAndServe("0.0.0.0:"+*port, nil)
 	log.Fatal(err)
-}
-
-var database *sqlx.DB
-
-func databaseURL() string {
-	if databaseURL := os.Getenv("DATABASE_URL"); databaseURL != "" {
-		return databaseURL
-	} else {
-		return "host=/var/run/postgresql dbname=ancientcitadel sslmode=disable"
-	}
-}
-
-func db() (*sqlx.DB, error) {
-	if database == nil {
-		db, err := sqlx.Connect("postgres", databaseURL())
-		database = db
-		return database, err
-	} else {
-		return database, database.Ping()
-	}
 }
