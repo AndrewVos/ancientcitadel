@@ -1,20 +1,21 @@
+{{define "index"}}
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <title>Ancient Citadel - browse and search the best {{.HumanCount}} gifs on the internet</title>
-    {{ template "head.html" }}
+    {{ template "head" }}
   </head>
   <body>
-    {{ template "google-analytics.html" }}
-    {{ template "navigation.html" . }}
+    {{ template "google-analytics" }}
+    {{ template "navigation" . }}
     <div class="container">
       {{ if .ShowAgeVerification }}
-        {{ template "age-verification.html" }}
+        {{ template "age-verification" }}
       {{ else }}
         {{ if .URLs }}
           <div class="items">
             {{range .URLs}}
-              {{ template "gif-item.html" . }}
+              {{ template "gif-item" . }}
             {{end}}
           </div>
           <div class="next-page">
@@ -30,3 +31,4 @@
     </div>
   </body>
 </html>
+{{end}}

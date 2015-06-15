@@ -1,8 +1,9 @@
+{{define "show"}}
 <!DOCTYPE html>
 <html>
   <head>
     <title>{{.URL.Title}}</title>
-    {{ template "head.html" }}
+    {{ template "head" }}
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:site" content="@ancient_citadel">
     <meta name="twitter:creator" content="@ancient_citadel">
@@ -11,11 +12,11 @@
     <meta name="twitter:image" content="{{.URL.URL}}">
   </head>
   <body>
-    {{ template "google-analytics.html" }}
-    {{ template "navigation.html" . }}
+    {{ template "google-analytics" }}
+    {{ template "navigation" . }}
     <div class="container">
       {{ if .ShowAgeVerification }}
-        {{ template "age-verification.html" }}
+        {{ template "age-verification" }}
       {{ else }}
         <script>
           $(function() {
@@ -23,9 +24,10 @@
           });
         </script>
         <div class="items">
-          {{ template "gif-item.html" .URL }}
+          {{ template "gif-item" .URL }}
         </div>
       {{ end }}
     </div>
   </body>
 </html>
+{{end}}

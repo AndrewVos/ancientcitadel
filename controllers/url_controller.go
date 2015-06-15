@@ -13,6 +13,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var templates = template.Must(template.ParseGlob("views/*"))
+
 const (
 	PageSize = 20
 )
@@ -52,12 +54,6 @@ func writeError(err error, w http.ResponseWriter) {
 
 func (c *URLController) Show(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
-	template, err := template.ParseFiles(templates("gif.html")...)
-	if err != nil {
-		writeError(err, w)
-		return
-	}
-
 	result := ShowResult{}
 
 	gifSlug := mux.Vars(r)["slug"]
@@ -93,7 +89,7 @@ func (c *URLController) Show(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = template.Execute(w, result)
+	err = templates.ExecuteTemplate(w, "show", result)
 	if err != nil {
 		writeError(err, w)
 		return
@@ -102,13 +98,8 @@ func (c *URLController) Show(w http.ResponseWriter, r *http.Request) {
 
 func (c *URLController) Index(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
-	template, err := template.ParseFiles(templates("index.html")...)
-	if err != nil {
-		writeError(err, w)
-		return
-	}
-
 	result := IndexResult{}
+
 	count, err := db.GetURLCount()
 	result.HumanCount = fmt.Sprintf("%s", humanize.Comma(int64(count)))
 
@@ -148,20 +139,9 @@ func (c *URLController) Index(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = template.Execute(w, result)
+	err = templates.ExecuteTemplate(w, "index", result)
 	if err != nil {
 		writeError(err, w)
 		return
-	}
-}
-
-func templates(layout string) []string {
-	return []string{
-		layout,
-		"navigation.html",
-		"head.html",
-		"google-analytics.html",
-		"gif-item.html",
-		"age-verification.html",
 	}
 }
