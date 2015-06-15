@@ -852,19 +852,6 @@ func loggingHandler(next http.Handler) http.Handler {
 	return handlers.LoggingHandler(os.Stdout, next)
 }
 
-func redirectHandler(next http.Handler) http.Handler {
-	fn := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		host := r.Host
-		if strings.HasPrefix(host, "www.") {
-			r.URL.Host = strings.TrimPrefix(host, "www.")
-			http.Redirect(w, r, r.URL.String(), http.StatusMovedPermanently)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
-	return fn
-}
-
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
@@ -876,7 +863,6 @@ func main() {
 
 	middleware := alice.New(
 		loggingHandler,
-		redirectHandler,
 		gziphandler.GzipHandler,
 	)
 
