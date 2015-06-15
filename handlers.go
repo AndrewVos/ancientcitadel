@@ -3,7 +3,6 @@ package main
 import (
 	"compress/gzip"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -13,7 +12,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/AndrewVos/ancientcitadel/controllers"
 	"github.com/AndrewVos/ancientcitadel/db"
 	"github.com/ChimeraCoder/anaconda"
 	"github.com/gorilla/handlers"
@@ -186,73 +184,6 @@ func sitemapHandler(w http.ResponseWriter, r *http.Request) {
 		page += 1
 	}
 	gzip.Write([]byte("</urlset>\n"))
-}
-
-func apiFeedHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	nsfw := mux.Vars(r)["work"] == "nsfw"
-	order := mux.Vars(r)["order"]
-	page := 1
-	if p := r.URL.Query().Get("page"); p != "" {
-		page, _ = strconv.Atoi(p)
-	}
-
-	type JSONError struct {
-		Error string `json:"error"`
-	}
-
-	var err error
-	var urls []db.URL
-
-	if order == "new" {
-		urls, err = db.GetURLs("", nsfw, page, controllers.PageSize)
-	} else if order == "top" {
-		urls, err = db.GetTopURLs(nsfw, page, controllers.PageSize)
-	}
-	if err != nil {
-		b, _ := json.Marshal(JSONError{Error: err.Error()})
-		w.Write(b)
-		return
-	}
-
-	if len(urls) == 0 {
-		urls = []db.URL{}
-	}
-
-	b, err := json.Marshal(urls)
-	if err != nil {
-		b, _ := json.Marshal(JSONError{Error: err.Error()})
-		w.Write(b)
-		return
-	}
-
-	_, err = w.Write(b)
-	if err != nil {
-		b, _ := json.Marshal(JSONError{Error: err.Error()})
-		w.Write(b)
-		return
-	}
-}
-
-func apiRandomHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	nsfw := mux.Vars(r)["work"] == "nsfw"
-
-	url, err := db.GetRandomURL(nsfw)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Print(err)
-		return
-	}
-
-	b, err := json.MarshalIndent(url, " ", "")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Print(err)
-		return
-	}
-	w.Write(b)
 }
 
 func loggingHandler(next http.Handler) http.Handler {
