@@ -1,7 +1,7 @@
 <div class="item">
   <div class="item-top">
     <p>
-      <a href="/gif/{{.ID}}">
+      <a href="{{.Permalink}}">
         <strong>{{.Title}} ({{.HumanCreatedAt}})</strong>
       </a>
     </p>
@@ -28,7 +28,7 @@
         <p class="tweet-status" style="display: none;"></p>
       </h2>
       <h2>
-        <a target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=ancientcitadel.com/gif/{{.ID}}&t={{.Title}}">on facebook</a>
+        <a target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=ancientcitadel.com/{{.Permalink}}&t={{.Title}}">on facebook</a>
       </h2>
       <div>
         <label for="shareMarkdown">Markdown</label>

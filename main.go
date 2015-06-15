@@ -23,6 +23,7 @@ import (
 	"github.com/AndrewVos/ancientcitadel/assethandler"
 	"github.com/AndrewVos/ancientcitadel/gifs"
 	"github.com/AndrewVos/ancientcitadel/reddit"
+	"github.com/AndrewVos/ancientcitadel/slug"
 	"github.com/AndrewVos/mig"
 	"github.com/ChimeraCoder/anaconda"
 	"github.com/dustin/go-humanize"
@@ -76,8 +77,13 @@ func NewPageFromRequest(w http.ResponseWriter, r *http.Request) (Page, error) {
 
 	page.NSFW = mux.Vars(r)["work"] == "nsfw"
 
-	id := mux.Vars(r)["id"]
-	if id != "" {
+	gifSlug := mux.Vars(r)["slug"]
+	var id int
+	if gifSlug != "" {
+		id, err = slug.Parse(gifSlug)
+	}
+
+	if id != 0 {
 		url, err := getURL(id)
 		if err != nil {
 			return Page{}, err
@@ -161,6 +167,11 @@ func (u URL) ToJSON() (string, error) {
 		return "", err
 	}
 	return string(b), nil
+}
+
+func (u URL) Permalink() string {
+	slug := slug.Slug(u.ID, u.Title)
+	return fmt.Sprintf("/gif/%v", slug)
 }
 
 func (u URL) HumanCreatedAt() string {
@@ -292,7 +303,15 @@ func tweetHandler(w http.ResponseWriter, r *http.Request) {
 		tokens[token.Token] = token
 		http.Redirect(w, r, requestURL, http.StatusTemporaryRedirect)
 	} else {
-		id := mux.Vars(r)["id"]
+		id, err := strconv.Atoi(mux.Vars(r)["id"])
+		if err != nil {
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				log.Print(err)
+				return
+			}
+		}
+
 		gif, err := getURL(id)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -328,7 +347,7 @@ func tweetHandler(w http.ResponseWriter, r *http.Request) {
 
 		v := url.Values{}
 		v.Set("media_ids", media.MediaIDString)
-		_, err = api.PostTweet("http://ancientcitadel.com/gif/"+id, v)
+		_, err = api.PostTweet("http://ancientcitadel.com/"+gif.Permalink(), v)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			log.Print(err)
@@ -694,7 +713,7 @@ func getDownloadResult(url string) (*DownloadResult, error) {
 	return nil, err
 }
 
-func getURL(id string) (URL, error) {
+func getURL(id int) (URL, error) {
 	db, err := db()
 	if err != nil {
 		return URL{}, err
@@ -907,12 +926,10 @@ func main() {
 		"/{work:nsfw}":                   mainHandler,
 		"/{work:nsfw}/{top:top}":         mainHandler,
 		"/{work:nsfw}/{shuffle:shuffle}": mainHandler,
-
-		"/gif/{id:\\d+}": gifHandler,
-
-		"/tweet/{id:\\d+}":  tweetHandler,
-		"/twitter/callback": twitterCallbackHandler,
-		"/sitemap.xml.gz":   sitemapHandler,
+		"/gif/{slug}":                    gifHandler,
+		"/tweet/{id:\\d+}":               tweetHandler,
+		"/twitter/callback":              twitterCallbackHandler,
+		"/sitemap.xml.gz":                sitemapHandler,
 	}
 
 	for path, handlerFunc := range handlerFuncs {
