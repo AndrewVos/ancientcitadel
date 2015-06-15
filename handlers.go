@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -14,53 +13,13 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/AndrewVos/ancientcitadel/controllers"
 	"github.com/AndrewVos/ancientcitadel/db"
 	"github.com/ChimeraCoder/anaconda"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/mrjones/oauth"
 )
-
-func templates(layout string) []string {
-	defaultTemplates := []string{
-		"navigation.html",
-		"head.html",
-		"google-analytics.html",
-		"gif-item.html",
-		"age-verification.html",
-	}
-	templates := []string{layout}
-	for _, template := range defaultTemplates {
-		templates = append(templates, template)
-	}
-	return templates
-}
-
-func pageHandler(layout string) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html")
-
-		template, err := template.ParseFiles(templates(layout)...)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			log.Print(err)
-			return
-		}
-		page, err := NewPageFromRequest(w, r)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			log.Print(err)
-			return
-		}
-
-		err = template.Execute(w, page)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			log.Print(err)
-			return
-		}
-	}
-}
 
 func twitterCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
@@ -246,9 +205,9 @@ func apiFeedHandler(w http.ResponseWriter, r *http.Request) {
 	var urls []db.URL
 
 	if order == "new" {
-		urls, err = db.GetURLs("", nsfw, page, PageSize)
+		urls, err = db.GetURLs("", nsfw, page, controllers.PageSize)
 	} else if order == "top" {
-		urls, err = db.GetTopURLs(nsfw, page, PageSize)
+		urls, err = db.GetTopURLs(nsfw, page, controllers.PageSize)
 	}
 	if err != nil {
 		b, _ := json.Marshal(JSONError{Error: err.Error()})

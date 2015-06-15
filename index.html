@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Ancient Citadel - browse and search the best {{.URLCount}} gifs on the internet</title>
+    <title>Ancient Citadel - browse and search the best {{.HumanCount}} gifs on the internet</title>
     {{ template "head.html" }}
   </head>
   <body>
@@ -18,7 +18,7 @@
             {{end}}
           </div>
           <div class="next-page">
-            <a href="{{.NextPage}}">BRING FORTH MORE GIFS</a>
+            <a href="{{.NextPageLink}}">BRING FORTH MORE GIFS</a>
           </div>
         {{ else }}
           <p>

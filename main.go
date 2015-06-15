@@ -8,6 +8,7 @@ import (
 	"runtime"
 
 	"github.com/AndrewVos/ancientcitadel/assethandler"
+	"github.com/AndrewVos/ancientcitadel/controllers"
 	"github.com/AndrewVos/ancientcitadel/db"
 	"github.com/AndrewVos/ancientcitadel/ingester"
 	"github.com/gorilla/mux"
@@ -62,16 +63,17 @@ func main() {
 		r.Handle(path, middleware.Then(handler))
 	}
 
+	urlController := controllers.NewURLController()
 	handlerFuncs := map[string]func(w http.ResponseWriter, r *http.Request){
 		"/api/random/{work:nsfw|sfw}":          apiRandomHandler,
 		"/api/{work:nsfw|sfw}/{order:new|top}": apiFeedHandler,
-		"/":                              pageHandler("index.html"),
-		"/{top:top}":                     pageHandler("index.html"),
-		"/{shuffle:shuffle}":             pageHandler("index.html"),
-		"/{work:nsfw}":                   pageHandler("index.html"),
-		"/{work:nsfw}/{top:top}":         pageHandler("index.html"),
-		"/{work:nsfw}/{shuffle:shuffle}": pageHandler("index.html"),
-		"/gif/{slug}":                    pageHandler("gif.html"),
+		"/":                              urlController.Index,
+		"/{top:top}":                     urlController.Index,
+		"/{shuffle:shuffle}":             urlController.Index,
+		"/{work:nsfw}":                   urlController.Index,
+		"/{work:nsfw}/{top:top}":         urlController.Index,
+		"/{work:nsfw}/{shuffle:shuffle}": urlController.Index,
+		"/gif/{slug}":                    urlController.Show,
 		"/tweet/{id:\\d+}":               tweetHandler,
 		"/twitter/callback":              twitterCallbackHandler,
 		"/sitemap.xml.gz":                sitemapHandler,
