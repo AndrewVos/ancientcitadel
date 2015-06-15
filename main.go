@@ -648,8 +648,8 @@ func updateRedditForever() {
 			"Puggifs", "SpaceGifs", "physicsgifs", "educationalgifs", "shockwaveporn",
 		},
 		"nsfw": []string{
-			"gifsgonewild", "porn_gifs", "PornGifs", "NSFW_SEXY_GIF", "nsfwcelebgifs",
-			"adultgifs", "NSFW_GIF", "nsfw_gifs", "porngif", "randomsexygifs",
+			"gifsgonewild", "porn_gifs", "PornGifs", "NSFW_SEXY_GIF",
+			"adultgifs", "NSFW_GIF", "nsfw_gifs", "porngif",
 		},
 	}
 
