@@ -16,16 +16,17 @@ const (
 )
 
 type Page struct {
-	r   *http.Request
-	url *db.URL
+	r    *http.Request
+	url  *db.URL
+	urls *[]db.URL
 }
 
-func NewPageFromRequest(w http.ResponseWriter, r *http.Request) (Page, error) {
-	page := Page{r: r}
+func NewPageFromRequest(w http.ResponseWriter, r *http.Request) (*Page, error) {
+	page := &Page{r: r}
 	return page, nil
 }
 
-func (p Page) currentPage() int {
+func (p *Page) currentPage() int {
 	if p := p.r.URL.Query().Get("page"); p != "" {
 		currentPage, _ := strconv.Atoi(p)
 		return currentPage
@@ -33,38 +34,38 @@ func (p Page) currentPage() int {
 	return 1
 }
 
-func (p Page) NextPage() string {
+func (p *Page) NextPage() string {
 	q := p.r.URL.Query()
 	q.Set("page", fmt.Sprintf("%v", p.currentPage()+1))
 	return "?" + q.Encode()
 }
 
-func (p Page) URLCount() (string, error) {
+func (p *Page) URLCount() (string, error) {
 	count, err := db.GetURLCount()
 	return fmt.Sprintf("%s", humanize.Comma(int64(count))), err
 }
 
-func (p Page) Query() string {
+func (p *Page) Query() string {
 	return p.r.URL.Query().Get("q")
 }
 
-func (p Page) SortByNew() bool {
+func (p *Page) SortByNew() bool {
 	return !p.SortByTop() && !p.SortByShuffle()
 }
 
-func (p Page) SortByTop() bool {
+func (p *Page) SortByTop() bool {
 	return mux.Vars(p.r)["top"] == "top"
 }
 
-func (p Page) SortByShuffle() bool {
+func (p *Page) SortByShuffle() bool {
 	return mux.Vars(p.r)["shuffle"] == "shuffle"
 }
 
-func (p Page) NSFW() bool {
+func (p *Page) NSFW() bool {
 	return mux.Vars(p.r)["work"] == "nsfw"
 }
 
-func (p Page) ShowAgeVerification() (bool, error) {
+func (p *Page) ShowAgeVerification() (bool, error) {
 	verified := mux.Vars(p.r)["age-verified"] == "yes"
 	if verified {
 		return false, nil
@@ -81,7 +82,7 @@ func (p Page) ShowAgeVerification() (bool, error) {
 	return p.NSFW(), nil
 }
 
-func (p Page) URL() (*db.URL, error) {
+func (p *Page) URL() (*db.URL, error) {
 	if p.url != nil {
 		return p.url, nil
 	}
@@ -101,7 +102,11 @@ func (p Page) URL() (*db.URL, error) {
 	return url, err
 }
 
-func (p Page) URLs() ([]db.URL, error) {
+func (p *Page) URLs() (*[]db.URL, error) {
+	if p.urls != nil {
+		return p.urls, nil
+	}
+
 	var urls []db.URL
 	var err error
 
@@ -112,6 +117,6 @@ func (p Page) URLs() ([]db.URL, error) {
 	} else {
 		urls, err = db.GetURLs(p.Query(), p.NSFW(), p.currentPage(), PageSize)
 	}
-	return urls, err
-
+	p.urls = &urls
+	return p.urls, err
 }

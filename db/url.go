@@ -184,9 +184,9 @@ func GetURL(id int) (*URL, error) {
 	if err != nil {
 		return nil, err
 	}
-	var url *URL
-	err = db.Get(url, `SELECT * FROM urls WHERE id = $1 LIMIT 1`, id)
-	return url, err
+	var url URL
+	err = db.Get(&url, `SELECT * FROM urls WHERE id = $1 LIMIT 1`, id)
+	return &url, err
 }
 
 func GetURLCount() (int, error) {
