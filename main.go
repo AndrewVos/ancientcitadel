@@ -29,6 +29,7 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
+	"github.com/justinas/alice"
 	_ "github.com/lib/pq"
 	"github.com/mrjones/oauth"
 	"github.com/nytimes/gziphandler"
@@ -847,15 +848,20 @@ func saveURL(url *URL) error {
 	return nil
 }
 
-func addHandlerWithoutGZIP(path string, r *mux.Router, h http.Handler) {
-	h = handlers.LoggingHandler(os.Stdout, h)
-	r.Handle(path, h)
+func loggingHandler(next http.Handler) http.Handler {
+	return handlers.LoggingHandler(os.Stdout, next)
 }
 
-func addHandler(path string, r *mux.Router, h http.Handler) {
-	h = gziphandler.GzipHandler(h)
-	h = handlers.LoggingHandler(os.Stdout, h)
-	r.Handle(path, h)
+func redirectHandler(next http.Handler) http.Handler {
+	fn := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Host, "www.") {
+			r.URL.Host = strings.TrimPrefix(r.URL.Host, "www.")
+			http.Redirect(w, r, r.URL.String(), http.StatusMovedPermanently)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+	return fn
 }
 
 func main() {
@@ -866,6 +872,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	middleware := alice.New(
+		loggingHandler,
+		redirectHandler,
+		gziphandler.GzipHandler,
+	)
 
 	port := flag.String("port", "8080", "the port to bind to")
 	flag.Parse()
@@ -881,7 +893,6 @@ func main() {
 		"assets/scripts/pack.js",
 		"assets/scripts/gifs.js",
 	})
-	addHandler("/compiled.js", r, jsHandler)
 
 	cssHandler := assethandler.CSS([]string{
 		"assets/styles/bootstrap.min.css",
@@ -890,28 +901,36 @@ func main() {
 		"assets/styles/main.css",
 		"assets/styles/play-button.css",
 	})
-	addHandler("/compiled.css", r, cssHandler)
+	handlers := map[string]http.Handler{
+		"/compiled.js":            jsHandler,
+		"/compiled.css":           cssHandler,
+		"/assets/favicons/{icon}": http.StripPrefix("/assets/favicons/", http.FileServer(http.Dir("./assets/favicons/"))),
+	}
 
-	addHandler("/assets/favicons/{icon}", r, http.StripPrefix("/assets/favicons/", http.FileServer(http.Dir("./assets/favicons/"))))
+	for path, handler := range handlers {
+		r.Handle(path, middleware.Then(handler))
+	}
 
-	addHandler("/api/random/{work:nsfw|sfw}", r, http.HandlerFunc(apiRandomHandler))
+	handlerFuncs := map[string]func(w http.ResponseWriter, r *http.Request){
+		"/api/random/{work:nsfw|sfw}":          apiRandomHandler,
+		"/api/{work:nsfw|sfw}/{order:new|top}": apiFeedHandler,
+		"/":                              mainHandler,
+		"/{top:top}":                     mainHandler,
+		"/{shuffle:shuffle}":             mainHandler,
+		"/{work:nsfw}":                   mainHandler,
+		"/{work:nsfw}/{top:top}":         mainHandler,
+		"/{work:nsfw}/{shuffle:shuffle}": mainHandler,
 
-	addHandler("/api/{work:nsfw|sfw}/{order:new|top}", r, http.HandlerFunc(apiFeedHandler))
+		"/gif/{id:\\d+}": gifHandler,
 
-	addHandler("/", r, http.HandlerFunc(mainHandler))
-	addHandler("/{top:top}", r, http.HandlerFunc(mainHandler))
-	addHandler("/{shuffle:shuffle}", r, http.HandlerFunc(mainHandler))
+		"/tweet/{id:\\d+}":  tweetHandler,
+		"/twitter/callback": twitterCallbackHandler,
+		"/sitemap.xml.gz":   sitemapHandler,
+	}
 
-	addHandler("/{work:nsfw}", r, http.HandlerFunc(mainHandler))
-	addHandler("/{work:nsfw}/{top:top}", r, http.HandlerFunc(mainHandler))
-	addHandler("/{work:nsfw}/{shuffle:shuffle}", r, http.HandlerFunc(mainHandler))
-
-	addHandler("/gif/{id:\\d+}", r, http.HandlerFunc(gifHandler))
-
-	addHandler("/tweet/{id:\\d+}", r, http.HandlerFunc(tweetHandler))
-	addHandler("/twitter/callback", r, http.HandlerFunc(twitterCallbackHandler))
-
-	addHandlerWithoutGZIP("/sitemap.xml.gz", r, http.HandlerFunc(sitemapHandler))
+	for path, handlerFunc := range handlerFuncs {
+		r.Handle(path, middleware.ThenFunc(handlerFunc))
+	}
 
 	http.Handle("/", r)
 	fmt.Printf("Starting on port %v...\n", *port)
