@@ -153,36 +153,30 @@ func templates(layout string) []string {
 	return templates
 }
 
-func genericHandler(layout string, w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html")
+func pageHandler(layout string) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
 
-	template, err := template.ParseFiles(templates(layout)...)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Print(err)
-		return
+		template, err := template.ParseFiles(templates(layout)...)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Print(err)
+			return
+		}
+		page, err := NewPageFromRequest(w, r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Print(err)
+			return
+		}
+
+		err = template.Execute(w, page)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Print(err)
+			return
+		}
 	}
-	page, err := NewPageFromRequest(w, r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Print(err)
-		return
-	}
-
-	err = template.Execute(w, page)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Print(err)
-		return
-	}
-}
-
-func gifHandler(w http.ResponseWriter, r *http.Request) {
-	genericHandler("gif.html", w, r)
-}
-
-func mainHandler(w http.ResponseWriter, r *http.Request) {
-	genericHandler("index.html", w, r)
 }
 
 func twitterCallbackHandler(w http.ResponseWriter, r *http.Request) {
@@ -664,13 +658,13 @@ func main() {
 	handlerFuncs := map[string]func(w http.ResponseWriter, r *http.Request){
 		"/api/random/{work:nsfw|sfw}":          apiRandomHandler,
 		"/api/{work:nsfw|sfw}/{order:new|top}": apiFeedHandler,
-		"/":                              mainHandler,
-		"/{top:top}":                     mainHandler,
-		"/{shuffle:shuffle}":             mainHandler,
-		"/{work:nsfw}":                   mainHandler,
-		"/{work:nsfw}/{top:top}":         mainHandler,
-		"/{work:nsfw}/{shuffle:shuffle}": mainHandler,
-		"/gif/{slug}":                    gifHandler,
+		"/":                              pageHandler("index.html"),
+		"/{top:top}":                     pageHandler("index.html"),
+		"/{shuffle:shuffle}":             pageHandler("index.html"),
+		"/{work:nsfw}":                   pageHandler("index.html"),
+		"/{work:nsfw}/{top:top}":         pageHandler("index.html"),
+		"/{work:nsfw}/{shuffle:shuffle}": pageHandler("index.html"),
+		"/gif/{slug}":                    pageHandler("gif.html"),
 		"/tweet/{id:\\d+}":               tweetHandler,
 		"/twitter/callback":              twitterCallbackHandler,
 		"/sitemap.xml.gz":                sitemapHandler,
