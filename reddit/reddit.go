@@ -5,12 +5,36 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sync"
 )
 
 type SubReddit struct {
 	Name           string
 	after          string
 	finishedPaging bool
+}
+
+type PageResult struct {
+	RedditURLs []RedditURL
+	Error      error
+}
+
+func (sr *SubReddit) AllPages() chan PageResult {
+	c := make(chan PageResult)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			page, err := sr.NextPage()
+			c <- PageResult{page, err}
+			if err != nil {
+				break
+			}
+		}
+		close(c)
+	}()
+	return c
 }
 
 func (sr *SubReddit) NextPage() ([]RedditURL, error) {
