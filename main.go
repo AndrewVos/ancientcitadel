@@ -854,7 +854,7 @@ func loggingHandler(next http.Handler) http.Handler {
 
 func redirectHandler(next http.Handler) http.Handler {
 	fn := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("URL:", r.URL)
+		fmt.Println("URL:", r.Host)
 		if strings.HasPrefix(r.URL.Host, "www.") {
 			newURL := r.URL
 			newURL.Host = strings.TrimPrefix(newURL.Host, "www.")
