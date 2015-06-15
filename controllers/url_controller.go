@@ -72,7 +72,12 @@ func (c *URLController) Show(w http.ResponseWriter, r *http.Request) {
 		writeError(err, w)
 		return
 	}
-	result.URL = url
+	if url == nil {
+		w.Write([]byte("404"))
+		w.WriteHeader(404)
+		return
+	}
+	result.URL = *url
 	result.NSFW = url.NSFW
 
 	verified := mux.Vars(r)["age-verified"] == "yes"
@@ -82,7 +87,7 @@ func (c *URLController) Show(w http.ResponseWriter, r *http.Request) {
 		result.ShowAgeVerification = result.NSFW
 	}
 
-	err = db.StoreURLView(url)
+	err = db.StoreURLView(*url)
 	if err != nil {
 		writeError(err, w)
 		return

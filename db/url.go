@@ -179,14 +179,20 @@ func GetTopURLs(nsfw bool, page int, pageSize int) ([]URL, error) {
 	return urls, err
 }
 
-func GetURL(id int) (URL, error) {
+func GetURL(id int) (*URL, error) {
 	db, err := db()
 	if err != nil {
-		return URL{}, err
+		return nil, err
 	}
-	var url URL
-	err = db.Get(&url, `SELECT * FROM urls WHERE id = $1 LIMIT 1`, id)
-	return url, err
+	var urls []URL
+	err = db.Select(&urls, `SELECT * FROM urls WHERE id = $1 LIMIT 1`, id)
+	if err != nil {
+		return nil, err
+	}
+	if len(urls) > 0 {
+		return &urls[0], nil
+	}
+	return nil, err
 }
 
 func GetURLCount() (int, error) {
