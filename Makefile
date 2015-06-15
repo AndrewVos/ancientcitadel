@@ -9,3 +9,6 @@ favicon:
 	chmod +x webicon.sh
 	cd assets/favicons && ../../webicon.sh ../../favicon.png
 	rm webicon.sh
+
+dev:
+	go test ./... && go build && ./ancientcitadel

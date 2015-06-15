@@ -4,14 +4,14 @@
       <a href="/">ANCIENT CITADEL</a>
       <a class="navbar-show-menu" href="#">menu</a>
     </li>
-    <li class="navbar-menu-item {{if .New}}active{{end}}">
-      <a href="{{if .NSFW}}/nsfw{{else}}/{{end}}">new {{if .New}}&#10004;{{end}}</a>
+    <li class="navbar-menu-item {{if .SortByNew}}active{{end}}">
+      <a href="{{if .NSFW}}/nsfw{{else}}/{{end}}">new {{if .SortByNew}}&#10004;{{end}}</a>
     </li>
-    <li class="navbar-menu-item {{if .Top}}active{{end}}">
-      <a href="{{if .NSFW}}/nsfw/top{{else}}/top{{end}}">top {{if .Top}}&#10004;{{end}}</a>
+    <li class="navbar-menu-item {{if .SortByTop}}active{{end}}">
+      <a href="{{if .NSFW}}/nsfw/top{{else}}/top{{end}}">top {{if .SortByTop}}&#10004;{{end}}</a>
     </li>
-    <li class="navbar-menu-item {{if .Shuffle}}active{{end}}">
-      <a href="{{if .NSFW}}/nsfw/shuffle{{else}}/shuffle{{end}}">shuffle {{if .Shuffle}}&#10004;{{end}}</a>
+    <li class="navbar-menu-item {{if .SortByShuffle}}active{{end}}">
+      <a href="{{if .NSFW}}/nsfw/shuffle{{else}}/shuffle{{end}}">shuffle {{if .SortByShuffle}}&#10004;{{end}}</a>
     </li>
     <li class="navbar-menu-item {{if .NSFW}}active{{end}}">
       <a href="{{if .NSFW}}/{{else}}/nsfw{{end}}">adult mode {{if .NSFW}}&#10004;{{end}}</a>

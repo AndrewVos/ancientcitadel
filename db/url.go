@@ -179,13 +179,13 @@ func GetTopURLs(nsfw bool, page int, pageSize int) ([]URL, error) {
 	return urls, err
 }
 
-func GetURL(id int) (URL, error) {
+func GetURL(id int) (*URL, error) {
 	db, err := db()
 	if err != nil {
-		return URL{}, err
+		return nil, err
 	}
-	var url URL
-	err = db.Get(&url, `SELECT * FROM urls WHERE id = $1 LIMIT 1`, id)
+	var url *URL
+	err = db.Get(url, `SELECT * FROM urls WHERE id = $1 LIMIT 1`, id)
 	return url, err
 }
 
@@ -216,7 +216,7 @@ func GetShuffledURLs(nsfw bool, page int, pageSize int) ([]URL, error) {
 	return urls, err
 }
 
-func StoreURLView(url URL) error {
+func StoreURLView(url *URL) error {
 	db, err := db()
 	if err != nil {
 		return err

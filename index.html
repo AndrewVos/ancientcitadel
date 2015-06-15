@@ -8,7 +8,7 @@
     {{ template "google-analytics.html" }}
     {{ template "navigation.html" . }}
     <div class="container">
-      {{ if .RequiresAgeVerification }}
+      {{ if .ShowAgeVerification }}
         {{ template "age-verification.html" }}
       {{ else }}
         {{ if .URLs }}
