@@ -1,8 +1,4 @@
-chrome-extension.zip:
-	zip -r chrome-extension.zip extensions/chrome
-
-clean:
-	rm chrome-extension.zip
+all: extensions/chrome.zip build
 
 favicon:
 	wget https://raw.githubusercontent.com/emarref/webicon/master/webicon.sh -O webicon.sh
@@ -10,5 +6,17 @@ favicon:
 	cd assets/favicons && ../../webicon.sh ../../favicon.png
 	rm webicon.sh
 
-dev:
-	go test ./... && go build && ./ancientcitadel
+go_dependencies = $(shell find . -type f -not -name 'ancientcitadel' -not -path "./extensions/*" -not -path "./.git/*")
+ancientcitadel: ${go_dependencies}
+	go test ./...
+	go build
+
+build: ancientcitadel
+
+dev: build
+	./ancientcitadel
+
+includes = $(wildcard extensions/chrome/*)
+extensions/chrome.zip: ${includes}
+	rm extensions/chrome.zip || :
+	zip -r extensions/chrome.zip extensions/chrome
