@@ -3,4 +3,4 @@
 ## Dependencies
 
 ## Running Locally
-Run `go build && ./ancientcitadel` then view that shit at [http://localhost:8080/](http://localhost:8080/).
+Run `make dev` then view that shit at [http://localhost:8080/](http://localhost:8080/).
