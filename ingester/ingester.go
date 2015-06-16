@@ -36,10 +36,12 @@ func Ingest() {
 	}
 
 	go func() {
-		for name, nsfw := range reddits {
-			err := updateSubReddit(name, nsfw)
-			if err != nil {
-				log.Println(err)
+		for {
+			for name, nsfw := range reddits {
+				err := updateSubReddit(name, nsfw)
+				if err != nil {
+					log.Println(err)
+				}
 			}
 		}
 	}()
