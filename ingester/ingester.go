@@ -53,8 +53,10 @@ func updateSubReddit(name string, nsfw bool) error {
 
 	subReddit := reddit.SubReddit{Name: name}
 
-	fmt.Printf("downloading (nsfw=%v) /r/%v...\n", nsfw, name)
+	page := 1
 	for pr := range subReddit.AllPages() {
+		fmt.Printf("downloading (nsfw=%v) /r/%v, page %v...\n", nsfw, name, page)
+		page += 1
 		if pr.Error != nil {
 			return pr.Error
 		}
