@@ -31,6 +31,9 @@ func (sr *SubReddit) AllPages() chan PageResult {
 			if err != nil {
 				break
 			}
+			if len(page) == 0 {
+				break
+			}
 		}
 		close(c)
 	}()
