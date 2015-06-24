@@ -67,8 +67,10 @@ func main() {
 	apiController := controllers.NewAPIController()
 
 	handlerFuncs := map[string]func(w http.ResponseWriter, r *http.Request){
+		"/api": apiController.Docs,
 		"/api/random/{work:nsfw|sfw}":                  apiController.Random,
 		"/api/{work:nsfw|sfw}/{order:new|top|shuffle}": apiController.Index,
+		"/api/{work:nsfw|sfw}":                         apiController.Index,
 		"/":                              urlController.Index,
 		"/{top:top}":                     urlController.Index,
 		"/{shuffle:shuffle}":             urlController.Index,

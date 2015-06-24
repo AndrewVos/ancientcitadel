@@ -1,0 +1,39 @@
+{{define "api"}}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Ancient Citadel API</title>
+    {{ template "head" }}
+  </head>
+  <body>
+    {{ template "google-analytics" }}
+    {{ template "navigation" . }}
+    <div class="container">
+      <div>
+        <h2>Get a page of search results</h2>
+        <p>GET /api/{nsfw|sfw}<strong>[?q=search terms][&page=10]</strong></p>
+      </div>
+
+      <div>
+        <h2>Get a page of newest content</h2>
+        <p>GET /api/{nsfw|sfw}/new<strong>[?page=10]</strong></p>
+      </div>
+
+      <div>
+        <h2>Get a page of most viewed content</h2>
+        <p>GET /api/{nsfw|sfw}/top<strong>[?page=10]</strong></p>
+      </div>
+
+      <div>
+        <h2>Get a random page of results</h2>
+        <p>GET /api/{nsfw|sfw}/shuffle<strong>[?page=10]</strong></p>
+      </div>
+
+      <div>
+        <h2>Get a single random result</h2>
+        <p>GET /api/random/{nsfw|sfw}</p>
+      </div>
+    </div>
+  </body>
+</html>
+{{end}}

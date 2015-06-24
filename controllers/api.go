@@ -27,6 +27,14 @@ func writeJSONError(w http.ResponseWriter, err error) {
 	return
 }
 
+func (c *APIController) Docs(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+	err := templates.ExecuteTemplate(w, "api", nil)
+	if err != nil {
+		writeError(err, w)
+	}
+}
+
 func (c *APIController) Index(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -36,12 +44,13 @@ func (c *APIController) Index(w http.ResponseWriter, r *http.Request) {
 	if p := r.URL.Query().Get("page"); p != "" {
 		page, _ = strconv.Atoi(p)
 	}
+	query := r.URL.Query().Get("q")
 
 	var err error
 	urls := []db.URL{}
 
-	if order == "new" {
-		urls, err = db.GetURLs("", nsfw, page, PageSize)
+	if order == "new" || order == "" {
+		urls, err = db.GetURLs(query, nsfw, page, PageSize)
 	} else if order == "top" {
 		urls, err = db.GetTopURLs(nsfw, page, PageSize)
 	} else if order == "shuffle" {
