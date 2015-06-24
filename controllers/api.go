@@ -61,6 +61,9 @@ func (c *APIController) Index(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(urls) == 0 {
+		urls = []db.URL{}
+	}
 	b, err := json.Marshal(urls)
 	if err != nil {
 		writeJSONError(w, err)
